@@ -44,10 +44,10 @@ if LANGSMITH_API_KEY:
 else:
     os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
-# CSS 스타일 (애니메이션 추가 및 기존 스타일 개선)
+# CSS 스타일 (헤더 애니메이션 및 색상 변경)
 st.markdown("""
 <style>
-    /* 헤더 그라데이션 배경 애니메이션 */
+    /* 헤더 그라데이션 배경 애니메이션 - 하늘색 계열로 변경 */
     @keyframes gradientAnimation {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
@@ -94,7 +94,8 @@ st.markdown("""
     .main-header {
         text-align: center;
         padding: 2rem 0;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        /* 기존 보라색 계열 대신 예쁜 하늘색 그라데이션으로 변경 */
+        background: linear-gradient(90deg, #89cff0 0%, #4682b4 100%); /* 밝은 하늘색 -> 스틸블루 */
         color: white;
         border-radius: 10px;
         margin-bottom: 2rem;
@@ -119,20 +120,20 @@ st.markdown("""
 
     /* Input and Button Styling */
     .stTextInput > div > div > input {
-        border: 2px solid #667eea;
+        border: 2px solid #89cff0; /* 하늘색 계열로 변경 */
         border-radius: 8px;
         padding: 0.75rem 1rem;
         transition: all 0.3s ease;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     .stTextInput > div > div > input:focus {
-        border-color: #764ba2 !important;
-        box-shadow: 0 0 0 0.25rem rgba(118, 75, 162, 0.25);
+        border-color: #4682b4 !important; /* 포커스 시 더 진한 하늘색 */
+        box-shadow: 0 0 0 0.25rem rgba(70, 130, 180, 0.25); /* 포커스 시 그림자도 변경 */
         outline: none;
     }
 
     .stButton > button {
-        background-color: #764ba2;
+        background-color: #4682b4; /* 버튼 색상도 스틸블루 계열로 변경 */
         color: white;
         border-radius: 8px;
         padding: 0.75rem 1.5rem;
@@ -143,7 +144,7 @@ st.markdown("""
         border: none; /* Streamlit 기본 테두리 제거 */
     }
     .stButton > button:hover {
-        background-color: #667eea;
+        background-color: #89cff0; /* 호버 시 밝은 하늘색 */
         transform: translateY(-3px);
         box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
     }
@@ -154,7 +155,7 @@ st.markdown("""
 
     /* Pros Section Styling */
     .pros-section {
-        background-color: #e6ffe6; /* 더 밝은 초록색 */
+        background-color: #e6ffe6; /* 기존 유지 */
         padding: 1.5rem;
         border-radius: 12px;
         margin: 1rem 0;
@@ -187,7 +188,7 @@ st.markdown("""
 
     /* Cons Section Styling */
     .cons-section {
-        background-color: #ffe6e6; /* 더 밝은 빨간색 */
+        background-color: #ffe6e6; /* 기존 유지 */
         padding: 1.5rem;
         border-radius: 12px;
         margin: 1rem 0;
@@ -219,7 +220,7 @@ st.markdown("""
 
     /* Process Info Styling */
     .process-info {
-        background-color: #e0f2fe; /* 더 밝은 파란색 */
+        background-color: #e0f2fe; /* 기존 유지 */
         padding: 1.2rem;
         border-radius: 8px;
         margin: 1.5rem 0;
@@ -713,8 +714,8 @@ with col2:
                 unsafe_allow_html=True
             )
             # 버튼 클릭 시 입력 필드 포커스 해제 (키보드 닫힘)
-            st.session_state["product_input"] = product_name # 입력값을 세션 상태에 저장
-            st.experimental_rerun() # 재실행하여 CSS 변경 적용
+            # st.session_state["product_input"] = product_name # 입력값을 세션 상태에 저장 (이것은 이제 불필요)
+            # st.experimental_rerun() # 재실행하여 CSS 변경 적용 (이것은 버튼 클릭 후 바로 결과가 나와야 하므로 주석 처리 또는 제거)
     with col_btn2:
         show_process = st.checkbox("🔧 프로세스 보기", value=True)
 
