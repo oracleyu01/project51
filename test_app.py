@@ -428,36 +428,37 @@ class ProConsLaptopCrawler:
         if not content or len(content) < 200:
             return None
         
-        content_preview = content[:1500] # 너무 긴 내용은 잘라내어 API 비용 및 토큰 제한 관리
+        content_preview = content[:1500]
         
-        # 장단점 개수에 대한 직접적인 예시 문구를 제거하여 모델이 더 유연하게 추출하도록 유도
         prompt = f"""다음은 "{product_name}"에 대한 블로그 리뷰입니다.
 
 [블로그 내용]
 {content_preview}
 
-위 내용에서 {product_name}의 장점과 단점을 최대한 구체적으로 추출해주세요.
-실제 사용 경험에 기반한 내용만 포함하며, 각 항목은 간결하게 한 문장으로 요약합니다.
+위 내용에서 {product_name}의 장점과 단점을 추출해주세요.
+실제 사용 경험에 기반한 구체적인 내용만 포함하세요.
 
 다음 형식으로 응답해주세요:
 
 장점:
-- (구체적인 장점)
-- (구체적인 장점)
+- (구체적인 장점 1)
+- (구체적인 장점 2)
+- (구체적인 장점 3)
 
 단점:
-- (구체적인 단점)
-- (구체적인 단점)
+- (구체적인 단점 1)
+- (구체적인 단점 2)
+- (구체적인 단점 3)
 
 만약 장단점 정보가 충분하지 않으면 "정보 부족"이라고 답해주세요."""
         
         try:
             response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo", # 또는 "gpt-4" 등 더 강력한 모델 사용 고려
+                model="gpt-3.5-turbo",
                 messages=[
                     {
                         "role": "system", 
-                        "content": "당신은 제품 리뷰 분석 전문가입니다. 실제 사용 경험에 기반한 장단점만 추출합니다. 추출하는 장단점의 개수는 제한하지 않습니다."
+                        "content": "당신은 제품 리뷰 분석 전문가입니다. 실제 사용 경험에 기반한 장단점만 추출합니다."
                     },
                     {
                         "role": "user", 
@@ -465,7 +466,7 @@ class ProConsLaptopCrawler:
                     }
                 ],
                 temperature=0.3,
-                max_tokens=500 # 추출되는 장단점의 총 길이가 너무 길어지지 않도록 적절히 조절
+                max_tokens=500
             )
             
             result = response.choices[0].message.content.strip()
@@ -485,7 +486,7 @@ class ProConsLaptopCrawler:
                         current_section = 'cons'
                     elif line.startswith('-') and current_section:
                         point = line[1:].strip()
-                        if point and len(point) > 5: # 너무 짧은 항목은 제외
+                        if point and len(point) > 5:
                             if current_section == 'pros':
                                 pros.append(point)
                             else:
@@ -493,10 +494,9 @@ class ProConsLaptopCrawler:
                 
                 if pros or cons:
                     self.stats['valid_pros_cons'] += 1
-                    # 여기서는 굳이 [:5]로 제한하지 않아 더 많은 개수 수집 가능성 높임
                     return {
-                        'pros': pros, # 이전 코드에서 pros[:5] 였던 것을 pros로 변경
-                        'cons': cons # 이전 코드에서 cons[:5] 였던 것을 cons로 변경
+                        'pros': pros[:5],
+                        'cons': cons[:5]
                     }
             
             return None
@@ -515,19 +515,13 @@ class ProConsLaptopCrawler:
         seen_keywords = set()
         
         for point in points:
-            # 단어 기반의 유사도 비교 (간단한 방법)
             keywords = set(word for word in point.split() if len(word) > 2)
             
-            # 이미 본 키워드들과 겹치는 비율이 높으면 중복으로 간주
-            # 이 로직은 정교하지 않을 수 있으며, 필요에 따라 임베딩 기반 유사도 비교로 개선 가능
-            if len(keywords) > 0 and len(keywords & seen_keywords) / len(keywords) < 0.5:
+            if len(keywords & seen_keywords) < len(keywords) * 0.5:
                 unique_points.append(point)
                 seen_keywords.update(keywords)
-            elif len(keywords) == 0 and point not in unique_points: # 키워드가 없는 아주 짧은 문장은 그냥 추가 (예: "좋아요")
-                 unique_points.append(point)
             
-            # 최종 결과 개수를 너무 많이 가져가지 않도록 제한 (최대 15개)
-            if len(unique_points) >= 15: # 이전 10개에서 15개로 증가 (조절 가능)
+            if len(unique_points) >= 10:
                 break
         
         return unique_points
@@ -553,34 +547,30 @@ def show_loading_animation():
     return loading_placeholder
 
 def create_pros_cons_chart(pros_count, cons_count):
-    """장단점 차트 생성 - 막대 길이가 개수에 따라 달라지도록 수정"""
-    fig = go.Figure()
-
-    # 장점 막대 추가
-    fig.add_trace(go.Bar(
-        name='장점',
-        x=['장점'], # x축을 '장점'으로 설정
-        y=[pros_count],
-        marker_color='#28a745',
-        text=f'{pros_count}개',
-        textposition='auto',
-        hovertemplate='장점: %{y}개<extra></extra>'
-    ))
-
-    # 단점 막대 추가
-    fig.add_trace(go.Bar(
-        name='단점',
-        x=['단점'], # x축을 '단점'으로 설정
-        y=[cons_count],
-        marker_color='#dc3545',
-        text=f'{cons_count}개',
-        textposition='auto',
-        hovertemplate='단점: %{y}개<extra></extra>'
-    ))
-
+    """장단점 차트 생성"""
+    fig = go.Figure(data=[
+        go.Bar(
+            name='장점',
+            x=['분석 결과'],
+            y=[pros_count],
+            marker_color='#28a745',
+            text=f'{pros_count}개',
+            textposition='auto',
+            hovertemplate='장점: %{y}개<extra></extra>'
+        ),
+        go.Bar(
+            name='단점',
+            x=['분석 결과'],
+            y=[cons_count],
+            marker_color='#dc3545',
+            text=f'{cons_count}개',
+            textposition='auto',
+            hovertemplate='단점: %{y}개<extra></extra>'
+        )
+    ])
+    
     fig.update_layout(
-        # barmode를 'group' 대신 기본값(겹치지 않음)으로 사용하거나 제거
-        # barmode='group', # 이 부분을 주석 처리하거나 삭제
+        barmode='group',
         height=300,
         margin=dict(l=0, r=0, t=30, b=0),
         plot_bgcolor='rgba(0,0,0,0)',
@@ -588,17 +578,11 @@ def create_pros_cons_chart(pros_count, cons_count):
         font=dict(size=14),
         showlegend=True,
         legend=dict(x=0.3, y=1.1, orientation='h'),
-        xaxis=dict(showgrid=False, showticklabels=True), # showticklabels를 True로 변경
-        yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.1)', zeroline=True, zerolinecolor='rgba(0,0,0,0.2)'), # y축 원점선 추가
-        bargap=0.3 # 막대 간 간격 조절
+        xaxis=dict(showgrid=False, showticklabels=False),
+        yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.1)'),
+        bargap=0.3
     )
     
-    # y축 범위 설정 (옵션) - 시각적 차이를 더 명확하게 하기 위해
-    # pros_count와 cons_count 중 더 큰 값에 1.2를 곱하여 y축 상한 설정
-    max_count = max(pros_count, cons_count)
-    if max_count > 0:
-        fig.update_yaxes(range=[0, max_count * 1.2]) # 최소 0부터 시작하도록 보장
-
     return fig
 
 # ========================
@@ -688,7 +672,7 @@ def crawl_web(state: SearchState) -> SearchState:
         )
         
         # 각 포스트 처리
-        for idx, post in enumerate(posts[:5]): # 상위 5개 포스트만 크롤링하여 API 호출 최소화 (조절 가능)
+        for idx, post in enumerate(posts[:5]):
             state["messages"].append(
                 AIMessage(content=f"📖 분석 중: {post['title'][:40]}...")
             )
@@ -716,9 +700,9 @@ def crawl_web(state: SearchState) -> SearchState:
                     AIMessage(content=f"✓ 장점 {len(pros_cons['pros'])}개, 단점 {len(pros_cons['cons'])}개 추출")
                 )
             
-            time.sleep(1) # API 호출 간 지연 시간 추가
+            time.sleep(1)
         
-        time.sleep(2) # 다음 검색어 시작 전 지연 시간
+        time.sleep(2)
     
     # 중복 제거 및 정리
     unique_pros = crawler.deduplicate_points(all_pros)
@@ -726,7 +710,7 @@ def crawl_web(state: SearchState) -> SearchState:
     
     state["pros"] = unique_pros
     state["cons"] = unique_cons
-    state["sources"] = sources[:10] # 출처도 너무 많아지지 않도록 제한
+    state["sources"] = sources[:10]
     
     if state["pros"] or state["cons"]:
         state["messages"].append(
@@ -753,9 +737,7 @@ def crawl_web(state: SearchState) -> SearchState:
                 })
             
             if data:
-                # Upsert를 사용하여 기존 데이터가 있으면 업데이트, 없으면 삽입
-                # 동일한 product_name, type, content 조합이 있다면 중복 저장 방지
-                supabase.table('laptop_pros_cons').upsert(data, on_conflict=['product_name', 'type', 'content']).execute()
+                supabase.table('laptop_pros_cons').insert(data).execute()
                 state["messages"].append(
                     AIMessage(content="💾 데이터베이스에 저장 완료!")
                 )
@@ -782,13 +764,8 @@ def process_results(state: SearchState) -> SearchState:
         data = state["results"]["data"]
         state["pros"] = [item['content'] for item in data if item['type'] == 'pro']
         state["cons"] = [item['content'] for item in data if item['type'] == 'con']
-        state["sources"] = [] # DB에서 가져온 경우 출처는 없음
+        state["sources"] = []
         
-        # DB에서 가져온 경우에도 중복 제거 로직을 적용하여 정리
-        crawler = get_crawler() # 중복 제거를 위해 crawler 인스턴스 사용
-        state["pros"] = crawler.deduplicate_points(state["pros"])
-        state["cons"] = crawler.deduplicate_points(state["cons"])
-
         state["messages"].append(
             AIMessage(content=f"📋 결과 정리 완료: 장점 {len(state['pros'])}개, 단점 {len(state['cons'])}개")
         )
@@ -1016,9 +993,7 @@ if search_button and product_name:
             """.format(icon, "DB" if final_state["search_method"] == "database" else "웹"), unsafe_allow_html=True)
         
         with col4:
-            # 긍정 비율 계산 시 0으로 나누는 오류 방지
-            total_items = len(final_state['pros']) + len(final_state['cons'])
-            total_score = len(final_state['pros']) / total_items * 100 if total_items > 0 else 0
+            total_score = len(final_state['pros']) / (len(final_state['pros']) + len(final_state['cons'])) * 100 if (len(final_state['pros']) + len(final_state['cons'])) > 0 else 0
             st.markdown("""
             <div class="metric-card">
                 <i class="fas fa-star" style="font-size: 2rem; color: #ffc107;"></i>
