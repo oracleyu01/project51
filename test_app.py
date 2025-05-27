@@ -1,3 +1,7 @@
+"""
+스마트한 쇼핑 앱 - LangGraph 버전 (최종)
+"""
+
 import streamlit as st
 import pandas as pd
 from supabase import create_client
@@ -44,53 +48,9 @@ if LANGSMITH_API_KEY:
 else:
     os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
-# CSS 스타일 (애니메이션 추가 및 기존 스타일 개선)
+# CSS 스타일
 st.markdown("""
 <style>
-    /* 헤더 그라데이션 배경 애니메이션 */
-    @keyframes gradientAnimation {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-
-    /* 제목 등장 애니메이션 */
-    @keyframes fadeInDown {
-        from {
-            opacity: 0;
-            transform: translate3d(0, -20px, 0);
-        }
-        to {
-            opacity: 1;
-            transform: translate3d(0, 0, 0);
-        }
-    }
-
-    /* 부제목/일반 텍스트 페이드인 애니메이션 */
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-    /* 하단에서 위로 페이드인 애니메이션 (결과 항목 등에 사용) */
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translate3d(0, 20px, 0);
-        }
-        to {
-            opacity: 1;
-            transform: translate3d(0, 0, 0);
-        }
-    }
-
-    /* 아이콘 회전 애니메이션 */
-    @keyframes rotate {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-
-    /* Main Header Styling */
     .main-header {
         text-align: center;
         padding: 2rem 0;
@@ -98,157 +58,36 @@ st.markdown("""
         color: white;
         border-radius: 10px;
         margin-bottom: 2rem;
-        background-size: 200% 200%; /* 배경 크기를 키워 애니메이션 영역 확보 */
-        animation: gradientAnimation 10s ease infinite; /* 10초 동안 부드럽게 반복 */
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* 그림자 추가로 입체감 */
-        overflow: hidden; /* 내부 요소 넘침 방지 */
     }
-    .main-header h1 {
-        font-size: 3.5rem;
-        font-weight: bold;
-        text-shadow: 3px 3px 5px rgba(0,0,0,0.3); /* 제목 그림자 */
-        animation: fadeInDown 1s ease-out; /* 제목 등장 애니메이션 */
-        margin-bottom: 0.5rem;
-    }
-    .main-header p {
-        font-size: 1.5rem;
-        margin-top: 0;
-        opacity: 0; /* 초기 투명하게 설정 */
-        animation: fadeIn 1.5s ease-out 0.5s forwards; /* 부제목 페이드인 (0.5초 지연) */
-    }
-
-    /* Input and Button Styling */
-    .stTextInput > div > div > input {
-        border: 2px solid #667eea;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    .stTextInput > div > div > input:focus {
-        border-color: #764ba2 !important;
-        box-shadow: 0 0 0 0.25rem rgba(118, 75, 162, 0.25);
-        outline: none;
-    }
-
-    .stButton > button {
-        background-color: #764ba2;
-        color: white;
-        border-radius: 8px;
-        padding: 0.75rem 1.5rem;
-        font-size: 1.1rem;
-        font-weight: bold;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-        border: none; /* Streamlit 기본 테두리 제거 */
-    }
-    .stButton > button:hover {
-        background-color: #667eea;
-        transform: translateY(-3px);
-        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
-    }
-    /* 검색 버튼 클릭 시 아이콘 회전 애니메이션 클래스 */
-    .stButton > button.search-button-clicked .st-emotion-cache-zt5ig8 { /* Streamlit 아이콘 SVG 선택자 */
-        animation: rotate 0.5s ease-out;
-    }
-
-    /* Pros Section Styling */
     .pros-section {
-        background-color: #e6ffe6; /* 더 밝은 초록색 */
+        background-color: #d4edda;
         padding: 1.5rem;
-        border-radius: 12px;
+        border-radius: 8px;
         margin: 1rem 0;
-        border-left: 6px solid #28a745;
-        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.1);
-        transition: all 0.3s ease-in-out;
+        border-left: 5px solid #28a745;
     }
-    .pros-section:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.25);
-    }
-    .pros-section h3 {
-        color: #28a745;
-        font-size: 1.8rem;
-        margin-bottom: 1rem;
-    }
-    .pros-section p { /* 각 항목에 적용 */
-        margin-bottom: 0.5rem;
-        animation: fadeInUp 0.5s ease-out forwards; /* 개별 등장 애니메이션 */
-        opacity: 0; /* 초기 투명 */
-    }
-    /* 각 항목에 delay를 줘서 순차적으로 나타나게 함 */
-    .pros-section p:nth-child(2) { animation-delay: 0.1s; }
-    .pros-section p:nth-child(3) { animation-delay: 0.2s; }
-    .pros-section p:nth-child(4) { animation-delay: 0.3s; }
-    .pros-section p:nth-child(5) { animation-delay: 0.4s; }
-    .pros-section p:nth-child(6) { animation-delay: 0.5s; }
-    /* ... 필요한 만큼 추가 (최대 10개) */
-
-
-    /* Cons Section Styling */
     .cons-section {
-        background-color: #ffe6e6; /* 더 밝은 빨간색 */
+        background-color: #f8d7da;
         padding: 1.5rem;
-        border-radius: 12px;
+        border-radius: 8px;
         margin: 1rem 0;
-        border-left: 6px solid #dc3545;
-        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.1);
-        transition: all 0.3s ease-in-out;
+        border-left: 5px solid #dc3545;
     }
-    .cons-section:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(220, 53, 69, 0.25);
-    }
-    .cons-section h3 {
-        color: #dc3545;
-        font-size: 1.8rem;
-        margin-bottom: 1rem;
-    }
-    .cons-section p { /* 각 항목에 적용 */
-        margin-bottom: 0.5rem;
-        animation: fadeInUp 0.5s ease-out forwards; /* 개별 등장 애니메이션 */
-        opacity: 0; /* 초기 투명 */
-    }
-    /* 각 항목에 delay를 줘서 순차적으로 나타나게 함 */
-    .cons-section p:nth-child(2) { animation-delay: 0.1s; }
-    .cons-section p:nth-child(3) { animation-delay: 0.2s; }
-    .cons-section p:nth-child(4) { animation-delay: 0.3s; }
-    .cons-section p:nth-child(5) { animation-delay: 0.4s; }
-    .cons-section p:nth-child(6) { animation-delay: 0.5s; }
-    /* ... 필요한 만큼 추가 */
-
-    /* Process Info Styling */
     .process-info {
-        background-color: #e0f2fe; /* 더 밝은 파란색 */
-        padding: 1.2rem;
-        border-radius: 8px;
-        margin: 1.5rem 0;
-        border-left: 4px solid #2196f3;
-        box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
-        animation: fadeInUp 0.8s ease-out; /* 등장 애니메이션 */
+        background-color: #e3f2fd;
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
+        border-left: 3px solid #2196f3;
     }
-
-    /* Footer Styling */
-    .footer {
-        text-align: center;
-        color: #888;
-        padding: 2rem;
-        font-size: 0.9rem;
-    }
-    .stExpander { /* Expander에 그림자 추가 */
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        border-radius: 8px;
-        margin-top: 1rem;
-    }
-
 </style>
 """, unsafe_allow_html=True)
 
 # 헤더
 st.markdown("""
 <div class="main-header">
-    <h1>🛒 스마트한 쇼핑 <br> (LangGraph Edition)</h1>
-    <p>
+    <h1>🛒 스마트한 쇼핑 (LangGraph Edition)</h1>
+    <p style="font-size: 1.2rem; margin-top: 1rem;">
         LangGraph로 구현한 지능형 제품 리뷰 분석 시스템
     </p>
 </div>
@@ -614,7 +453,6 @@ def crawl_web(state: SearchState) -> SearchState:
                 AIMessage(content=f"⚠️ DB 저장 실패: {str(e)}")
             )
     else:
-        # st.error(f"'{product_name}'에 대한 정보를 찾을 수 없습니다.") # 이 부분을 UI에 직접 표시하도록 변경
         state["messages"].append(
             AIMessage(content=f"😢 '{product_name}'에 대한 정보를 찾을 수 없습니다.")
         )
@@ -689,37 +527,17 @@ col1, col2, col3 = st.columns([1, 3, 1])
 with col2:
     product_name = st.text_input(
         "🔍 제품명을 입력하세요",
-        placeholder="예: 맥북 프로 M3, LG 그램 2024, 갤럭시북4 프로, 그릴 요거트",
-        key="product_input" # 고유 키 추가
+        placeholder="예: 맥북 프로 M3, LG 그램 2024, 갤럭시북4 프로, 그릴 요거트"
     )
     
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        # 버튼에 클릭 시 클래스 추가를 위한 트릭 (자바스크립트 주입)
-        search_button_clicked = st.button("🔍 검색하기", use_container_width=True, type="primary", key="search_button")
-        if search_button_clicked:
-            st.markdown(
-                """
-                <script>
-                    const button = window.parent.document.querySelector('[data-testid="stButton"] button');
-                    if (button) {
-                        button.classList.add('search-button-clicked');
-                        setTimeout(() => {
-                            button.classList.remove('search-button-clicked');
-                        }, 500); // 0.5초 후 클래스 제거
-                    }
-                </script>
-                """,
-                unsafe_allow_html=True
-            )
-            # 버튼 클릭 시 입력 필드 포커스 해제 (키보드 닫힘)
-            st.session_state["product_input"] = product_name # 입력값을 세션 상태에 저장
-            st.experimental_rerun() # 재실행하여 CSS 변경 적용
+        search_button = st.button("🔍 검색하기", use_container_width=True, type="primary")
     with col_btn2:
         show_process = st.checkbox("🔧 프로세스 보기", value=True)
 
 # 검색 실행
-if search_button_clicked and product_name:
+if search_button and product_name:
     with st.spinner(f"'{product_name}' 검색 중..."):
         # LangGraph 실행
         initial_state = {
@@ -741,9 +559,9 @@ if search_button_clicked and product_name:
         with st.expander("🔧 검색 프로세스", expanded=True):
             for msg in final_state["messages"]:
                 if isinstance(msg, HumanMessage):
-                    st.info(f"👤 {msg.content}") # info로 변경하여 시각적 구분
+                    st.write(f"👤 {msg.content}")
                 else:
-                    st.success(f"🤖 {msg.content}") # success로 변경
+                    st.write(f"🤖 {msg.content}")
     
     # 결과 표시
     if final_state["pros"] or final_state["cons"]:
@@ -769,10 +587,8 @@ if search_button_clicked and product_name:
             """, unsafe_allow_html=True)
             
             if final_state["pros"]:
-                # 각 장점 항목에 고유한 지연 시간 부여
                 for idx, pro in enumerate(final_state["pros"], 1):
-                    # st.markdown을 사용하여 각 항목에 CSS 애니메이션 클래스 적용
-                    st.markdown(f'<p style="animation-delay: {idx*0.1}s;">🟢 {idx}. {pro}</p>', unsafe_allow_html=True)
+                    st.write(f"{idx}. {pro}")
             else:
                 st.write("장점 정보가 없습니다.")
         
@@ -784,9 +600,8 @@ if search_button_clicked and product_name:
             """, unsafe_allow_html=True)
             
             if final_state["cons"]:
-                # 각 단점 항목에 고유한 지연 시간 부여
                 for idx, con in enumerate(final_state["cons"], 1):
-                    st.markdown(f'<p style="animation-delay: {idx*0.1}s;">🔴 {idx}. {con}</p>', unsafe_allow_html=True)
+                    st.write(f"{idx}. {con}")
             else:
                 st.write("단점 정보가 없습니다.")
         
@@ -806,7 +621,7 @@ if search_button_clicked and product_name:
         with col3:
             st.metric("검색 방법", "DB" if final_state["search_method"] == "database" else "웹")
     else:
-        st.error(f"'{product_name}'에 대한 정보를 찾을 수 없습니다. 다시 시도해 주세요.")
+        st.error(f"'{product_name}'에 대한 정보를 찾을 수 없습니다.")
 
 # 하단 정보
 st.markdown("---")
@@ -820,7 +635,7 @@ with col3:
 
 current_date = datetime.now().strftime('%Y년 %m월 %d일')
 st.markdown(f"""
-<div class="footer">
+<div style="text-align: center; color: #666; padding: 2rem;">
     <p>마지막 업데이트: {current_date}</p>
     <p>Powered by LangGraph & OpenAI</p>
 </div>
