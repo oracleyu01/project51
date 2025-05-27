@@ -1,5 +1,5 @@
 """
-스마트한 쇼핑 앱 - LangGraph 버전 (최종)
+스마트한 쇼핑 앱 - LangGraph 버전 (디자인 개선)
 """
 
 import streamlit as st
@@ -15,6 +15,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 import numpy as np
+import plotly.graph_objects as go
 
 # LangGraph 관련
 from typing import TypedDict, Annotated, List, Union, Dict
@@ -26,7 +27,8 @@ import operator
 st.set_page_config(
     page_title="스마트한 쇼핑 (LangGraph)",
     page_icon="🛒",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # 환경 변수 로드
@@ -48,38 +50,267 @@ if LANGSMITH_API_KEY:
 else:
     os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
-# CSS 스타일
-st.markdown("""
+# 세션 상태 초기화
+if 'dark_mode' not in st.session_state:
+    st.session_state.dark_mode = False
+if 'bookmarks' not in st.session_state:
+    st.session_state.bookmarks = []
+
+# 사이드바 설정
+with st.sidebar:
+    st.markdown("### ⚙️ 설정")
+    dark_mode = st.checkbox("🌙 다크모드", value=st.session_state.dark_mode)
+    st.session_state.dark_mode = dark_mode
+    
+    st.markdown("### 📌 북마크")
+    if st.session_state.bookmarks:
+        for bookmark in st.session_state.bookmarks:
+            if st.button(f"🔖 {bookmark}", key=f"bookmark_{bookmark}"):
+                st.session_state.selected_bookmark = bookmark
+    else:
+        st.info("북마크가 없습니다")
+    
+    st.markdown("### 📊 사용 통계")
+    st.metric("총 검색 수", "0회")
+    st.metric("저장된 제품", "0개")
+
+# CSS 스타일 - 다크모드 지원
+if st.session_state.dark_mode:
+    bg_gradient = "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
+    card_bg = "#0f3460"
+    text_color = "#ffffff"
+    secondary_text = "#e94560"
+    header_gradient = "linear-gradient(135deg, #e94560 0%, #0f3460 100%)"
+else:
+    bg_gradient = "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)"
+    card_bg = "white"
+    text_color = "#333333"
+    secondary_text = "#667eea"
+    header_gradient = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+
+st.markdown(f"""
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
-    .main-header {
+    /* 전체 배경 및 기본 스타일 */
+    .stApp {{
+        background: {bg_gradient};
+    }}
+    
+    /* 메인 헤더 개선 */
+    .main-header {{
         text-align: center;
-        padding: 2rem 0;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        padding: 3rem 0;
+        background: {header_gradient};
         color: white;
-        border-radius: 10px;
+        border-radius: 20px;
+        margin-bottom: 3rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+    }}
+    
+    .main-header::before {{
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: shimmer 3s infinite;
+    }}
+    
+    @keyframes shimmer {{
+        0% {{ transform: rotate(0deg); }}
+        100% {{ transform: rotate(360deg); }}
+    }}
+    
+    /* 카드 스타일 */
+    .search-card {{
+        background: {card_bg};
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
         margin-bottom: 2rem;
-    }
-    .pros-section {
-        background-color: #d4edda;
-        padding: 1.5rem;
-        border-radius: 8px;
+        color: {text_color};
+    }}
+    
+    /* 장점 섹션 개선 */
+    .pros-section {{
+        background: linear-gradient(135deg, #d4f1d4 0%, #b8e6b8 100%);
+        padding: 2rem;
+        border-radius: 15px;
         margin: 1rem 0;
-        border-left: 5px solid #28a745;
-    }
-    .cons-section {
-        background-color: #f8d7da;
-        padding: 1.5rem;
-        border-radius: 8px;
+        border: none;
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.1);
+        transition: transform 0.3s ease;
+    }}
+    
+    .pros-section:hover {{
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.15);
+    }}
+    
+    /* 단점 섹션 개선 */
+    .cons-section {{
+        background: linear-gradient(135deg, #ffd6d6 0%, #ffb8b8 100%);
+        padding: 2rem;
+        border-radius: 15px;
         margin: 1rem 0;
-        border-left: 5px solid #dc3545;
-    }
-    .process-info {
-        background-color: #e3f2fd;
+        border: none;
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.1);
+        transition: transform 0.3s ease;
+    }}
+    
+    .cons-section:hover {{
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.15);
+    }}
+    
+    /* 프로세스 정보 개선 */
+    .process-info {{
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin: 1.5rem 0;
+        border: none;
+        box-shadow: 0 3px 10px rgba(33, 150, 243, 0.1);
+    }}
+    
+    /* 버튼 스타일 개선 */
+    .stButton > button {{
+        background: {header_gradient};
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 30px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }}
+    
+    .stButton > button:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }}
+    
+    /* 입력 필드 스타일 */
+    .stTextInput > div > div > input {{
+        border-radius: 10px;
+        border: 2px solid #e0e0e0;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+        background: {card_bg};
+        color: {text_color};
+    }}
+    
+    .stTextInput > div > div > input:focus {{
+        border-color: {secondary_text};
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }}
+    
+    /* 메트릭 카드 */
+    .metric-card {{
+        background: {card_bg};
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        text-align: center;
+        transition: all 0.3s ease;
+        color: {text_color};
+    }}
+    
+    .metric-card:hover {{
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.12);
+    }}
+    
+    /* 애니메이션 효과 */
+    @keyframes fadeIn {{
+        from {{ opacity: 0; transform: translateY(20px); }}
+        to {{ opacity: 1; transform: translateY(0); }}
+    }}
+    
+    .fade-in {{
+        animation: fadeIn 0.6s ease-out;
+    }}
+    
+    /* 로딩 스피너 */
+    .spinner {{
+        width: 50px;
+        height: 50px;
+        margin: 0 auto;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid {secondary_text};
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }}
+    
+    @keyframes spin {{
+        0% {{ transform: rotate(0deg); }}
+        100% {{ transform: rotate(360deg); }}
+    }}
+    
+    /* 프로스/콘스 아이템 */
+    .pros-item, .cons-item {{
+        background: white;
         padding: 1rem;
-        border-radius: 5px;
+        margin: 0.5rem 0;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        animation: fadeIn 0.5s ease-out;
+    }}
+    
+    .pros-item {{
+        border-left: 4px solid #28a745;
+    }}
+    
+    .cons-item {{
+        border-left: 4px solid #dc3545;
+    }}
+    
+    .pros-item:hover, .cons-item:hover {{
+        transform: translateX(5px);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    }}
+    
+    /* 모바일 반응형 */
+    @media (max-width: 768px) {{
+        .main-header {{
+            padding: 2rem 1rem;
+            font-size: 0.9rem;
+        }}
+        .main-header h1 {{
+            font-size: 1.8rem;
+        }}
+        .search-card {{
+            padding: 1.5rem 1rem;
+        }}
+        .pros-section, .cons-section {{
+            padding: 1.5rem 1rem;
+        }}
+    }}
+    
+    /* 프로그레스 바 */
+    .progress-bar {{
+        width: 100%;
+        height: 8px;
+        background-color: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
         margin: 1rem 0;
-        border-left: 3px solid #2196f3;
-    }
+    }}
+    
+    .progress-fill {{
+        height: 100%;
+        background: {header_gradient};
+        animation: progress 2s ease-out;
+    }}
+    
+    @keyframes progress {{
+        from {{ width: 0%; }}
+        to {{ width: 100%; }}
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -89,6 +320,9 @@ st.markdown("""
     <h1>🛒 스마트한 쇼핑 (LangGraph Edition)</h1>
     <p style="font-size: 1.2rem; margin-top: 1rem;">
         LangGraph로 구현한 지능형 제품 리뷰 분석 시스템
+    </p>
+    <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.8;">
+        <i class="fas fa-robot"></i> AI가 수천 개의 리뷰를 분석하여 핵심 장단점을 요약해드립니다
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -293,6 +527,65 @@ class ProConsLaptopCrawler:
         return unique_points
 
 # ========================
+# 유틸리티 함수들
+# ========================
+
+def show_loading_animation():
+    """로딩 애니메이션 표시"""
+    loading_placeholder = st.empty()
+    loading_placeholder.markdown("""
+    <div style="text-align: center; padding: 3rem;">
+        <div class="spinner"></div>
+        <p style="margin-top: 1rem; color: #667eea; font-weight: 600;">
+            <i class="fas fa-brain"></i> AI가 제품 정보를 분석하고 있습니다...
+        </p>
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    return loading_placeholder
+
+def create_pros_cons_chart(pros_count, cons_count):
+    """장단점 차트 생성"""
+    fig = go.Figure(data=[
+        go.Bar(
+            name='장점',
+            x=['분석 결과'],
+            y=[pros_count],
+            marker_color='#28a745',
+            text=f'{pros_count}개',
+            textposition='auto',
+            hovertemplate='장점: %{y}개<extra></extra>'
+        ),
+        go.Bar(
+            name='단점',
+            x=['분석 결과'],
+            y=[cons_count],
+            marker_color='#dc3545',
+            text=f'{cons_count}개',
+            textposition='auto',
+            hovertemplate='단점: %{y}개<extra></extra>'
+        )
+    ])
+    
+    fig.update_layout(
+        barmode='group',
+        height=300,
+        margin=dict(l=0, r=0, t=30, b=0),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(size=14),
+        showlegend=True,
+        legend=dict(x=0.3, y=1.1, orientation='h'),
+        xaxis=dict(showgrid=False, showticklabels=False),
+        yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.1)'),
+        bargap=0.3
+    )
+    
+    return fig
+
+# ========================
 # LangGraph 노드 함수들
 # ========================
 
@@ -315,7 +608,7 @@ def search_database(state: SearchState) -> SearchState:
     )
     
     try:
-        # 정확한 매칭만 시도 (벡터 검색 제거)
+        # 정확한 매칭만 시도
         exact_match = supabase.table('laptop_pros_cons').select("*").eq('product_name', product_name).execute()
         if exact_match.data:
             state["search_method"] = "database"
@@ -356,7 +649,7 @@ def crawl_web(state: SearchState) -> SearchState:
     all_cons = []
     sources = []
     
-    # 검색 쿼리 - 제품명에 맞춰 동적으로 생성
+    # 검색 쿼리
     search_queries = [
         f"{product_name} 장단점 실사용",
         f"{product_name} 단점 후기",
@@ -379,7 +672,7 @@ def crawl_web(state: SearchState) -> SearchState:
         )
         
         # 각 포스트 처리
-        for idx, post in enumerate(posts[:5]):  # 각 쿼리당 최대 5개
+        for idx, post in enumerate(posts[:5]):
             state["messages"].append(
                 AIMessage(content=f"📖 분석 중: {post['title'][:40]}...")
             )
@@ -407,9 +700,9 @@ def crawl_web(state: SearchState) -> SearchState:
                     AIMessage(content=f"✓ 장점 {len(pros_cons['pros'])}개, 단점 {len(pros_cons['cons'])}개 추출")
                 )
             
-            time.sleep(1)  # API 제한 방지
+            time.sleep(1)
         
-        time.sleep(2)  # 검색 간 대기
+        time.sleep(2)
     
     # 중복 제거 및 정리
     unique_pros = crawler.deduplicate_points(all_pros)
@@ -471,7 +764,7 @@ def process_results(state: SearchState) -> SearchState:
         data = state["results"]["data"]
         state["pros"] = [item['content'] for item in data if item['type'] == 'pro']
         state["cons"] = [item['content'] for item in data if item['type'] == 'con']
-        state["sources"] = []  # DB에는 별도 소스 없음
+        state["sources"] = []
         
         state["messages"].append(
             AIMessage(content=f"📋 결과 정리 완료: 장점 {len(state['pros'])}개, 단점 {len(state['cons'])}개")
@@ -525,38 +818,65 @@ search_app = create_search_workflow()
 col1, col2, col3 = st.columns([1, 3, 1])
 
 with col2:
+    st.markdown('<div class="search-card fade-in">', unsafe_allow_html=True)
+    
+    st.markdown("""
+    <h3 style="text-align: center; color: #333; margin-bottom: 1.5rem;">
+        <i class="fas fa-search"></i> 어떤 제품을 찾고 계신가요?
+    </h3>
+    """, unsafe_allow_html=True)
+    
+    # 북마크에서 선택된 항목이 있으면 자동 입력
+    default_value = ""
+    if 'selected_bookmark' in st.session_state:
+        default_value = st.session_state.selected_bookmark
+        del st.session_state.selected_bookmark
+    
     product_name = st.text_input(
-        "🔍 제품명을 입력하세요",
-        placeholder="예: 맥북 프로 M3, LG 그램 2024, 갤럭시북4 프로, 그릴 요거트"
+        "",
+        placeholder="예: 맥북 프로 M3, LG 그램 2024, 갤럭시북4 프로",
+        label_visibility="collapsed",
+        value=default_value
     )
     
-    col_btn1, col_btn2 = st.columns(2)
+    col_btn1, col_btn2, col_btn3 = st.columns([2, 2, 1])
     with col_btn1:
         search_button = st.button("🔍 검색하기", use_container_width=True, type="primary")
     with col_btn2:
         show_process = st.checkbox("🔧 프로세스 보기", value=True)
+    with col_btn3:
+        if product_name and st.button("📌", help="북마크에 추가"):
+            if product_name not in st.session_state.bookmarks:
+                st.session_state.bookmarks.append(product_name)
+                st.success("북마크에 추가되었습니다!")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # 검색 실행
 if search_button and product_name:
-    with st.spinner(f"'{product_name}' 검색 중..."):
-        # LangGraph 실행
-        initial_state = {
-            "product_name": product_name,
-            "search_method": "",
-            "results": {},
-            "pros": [],
-            "cons": [],
-            "sources": [],
-            "messages": [],
-            "error": ""
-        }
-        
-        # 워크플로우 실행
-        final_state = search_app.invoke(initial_state)
+    loading_placeholder = show_loading_animation()
+    
+    # LangGraph 실행
+    initial_state = {
+        "product_name": product_name,
+        "search_method": "",
+        "results": {},
+        "pros": [],
+        "cons": [],
+        "sources": [],
+        "messages": [],
+        "error": ""
+    }
+    
+    # 워크플로우 실행
+    final_state = search_app.invoke(initial_state)
+    
+    # 로딩 애니메이션 제거
+    loading_placeholder.empty()
     
     # 프로세스 로그 표시
     if show_process and final_state["messages"]:
-        with st.expander("🔧 검색 프로세스", expanded=True):
+        with st.expander("🔧 검색 프로세스", expanded=False):
             for msg in final_state["messages"]:
                 if isinstance(msg, HumanMessage):
                     st.write(f"👤 {msg.content}")
@@ -567,41 +887,63 @@ if search_button and product_name:
     if final_state["pros"] or final_state["cons"]:
         # 검색 정보
         st.markdown(f"""
-        <div class="process-info">
-            <strong>검색 방법:</strong> {
+        <div class="process-info fade-in">
+            <strong><i class="fas fa-info-circle"></i> 검색 방법:</strong> {
                 '데이터베이스' if final_state["search_method"] == "database" else '웹 크롤링'
             } | 
-            <strong>장점:</strong> {len(final_state["pros"])}개 | 
-            <strong>단점:</strong> {len(final_state["cons"])}개
+            <strong><i class="fas fa-thumbs-up"></i> 장점:</strong> {len(final_state["pros"])}개 | 
+            <strong><i class="fas fa-thumbs-down"></i> 단점:</strong> {len(final_state["cons"])}개
         </div>
         """, unsafe_allow_html=True)
+        
+        # 차트 표시
+        st.plotly_chart(
+            create_pros_cons_chart(len(final_state["pros"]), len(final_state["cons"])),
+            use_container_width=True
+        )
         
         # 장단점 표시
         col1, col2 = st.columns(2)
         
         with col1:
             st.markdown("""
-            <div class="pros-section">
-                <h3>✅ 장점</h3>
+            <div class="pros-section fade-in">
+                <h3 style="color: #28a745; margin-bottom: 1.5rem;">
+                    <i class="fas fa-check-circle"></i> 장점
+                </h3>
             </div>
             """, unsafe_allow_html=True)
             
             if final_state["pros"]:
                 for idx, pro in enumerate(final_state["pros"], 1):
-                    st.write(f"{idx}. {pro}")
+                    st.markdown(f"""
+                    <div class="pros-item">
+                        <span style="color: #28a745; font-weight: bold;">
+                            <i class="fas fa-check"></i> {idx}.
+                        </span> {pro}
+                    </div>
+                    """, unsafe_allow_html=True)
             else:
                 st.write("장점 정보가 없습니다.")
         
         with col2:
             st.markdown("""
-            <div class="cons-section">
-                <h3>❌ 단점</h3>
+            <div class="cons-section fade-in">
+                <h3 style="color: #dc3545; margin-bottom: 1.5rem;">
+                    <i class="fas fa-times-circle"></i> 단점
+                </h3>
             </div>
             """, unsafe_allow_html=True)
             
             if final_state["cons"]:
                 for idx, con in enumerate(final_state["cons"], 1):
-                    st.write(f"{idx}. {con}")
+                    st.markdown(f"""
+                    <div class="cons-item">
+                        <span style="color: #dc3545; font-weight: bold;">
+                            <i class="fas fa-times"></i> {idx}.
+                        </span> {con}
+                    </div>
+                    """, unsafe_allow_html=True)
             else:
                 st.write("단점 정보가 없습니다.")
         
@@ -609,17 +951,78 @@ if search_button and product_name:
         if final_state["sources"]:
             with st.expander("📚 출처 보기"):
                 for idx, source in enumerate(final_state["sources"], 1):
-                    st.write(f"{idx}. [{source['title']}]({source['link']})")
+                    st.markdown(f"""
+                    <div style="padding: 0.5rem; margin: 0.3rem 0;">
+                        <i class="fas fa-link"></i> {idx}. 
+                        <a href="{source['link']}" target="_blank" style="color: {secondary_text};">
+                            {source['title']}
+                        </a>
+                    </div>
+                    """, unsafe_allow_html=True)
         
-        # 통계
+        # 통계 카드
         st.markdown("---")
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
+        
         with col1:
-            st.metric("총 장점", f"{len(final_state['pros'])}개")
+            st.markdown("""
+            <div class="metric-card">
+                <i class="fas fa-thumbs-up" style="font-size: 2rem; color: #28a745;"></i>
+                <h3 style="margin: 0.5rem 0;">{}</h3>
+                <p style="margin: 0; opacity: 0.7;">총 장점</p>
+            </div>
+            """.format(len(final_state['pros'])), unsafe_allow_html=True)
+        
         with col2:
-            st.metric("총 단점", f"{len(final_state['cons'])}개")
+            st.markdown("""
+            <div class="metric-card">
+                <i class="fas fa-thumbs-down" style="font-size: 2rem; color: #dc3545;"></i>
+                <h3 style="margin: 0.5rem 0;">{}</h3>
+                <p style="margin: 0; opacity: 0.7;">총 단점</p>
+            </div>
+            """.format(len(final_state['cons'])), unsafe_allow_html=True)
+        
         with col3:
-            st.metric("검색 방법", "DB" if final_state["search_method"] == "database" else "웹")
+            icon = "fa-database" if final_state["search_method"] == "database" else "fa-globe"
+            st.markdown("""
+            <div class="metric-card">
+                <i class="fas {}" style="font-size: 2rem; color: #2196f3;"></i>
+                <h3 style="margin: 0.5rem 0;">{}</h3>
+                <p style="margin: 0; opacity: 0.7;">검색 방법</p>
+            </div>
+            """.format(icon, "DB" if final_state["search_method"] == "database" else "웹"), unsafe_allow_html=True)
+        
+        with col4:
+            total_score = len(final_state['pros']) / (len(final_state['pros']) + len(final_state['cons'])) * 100 if (len(final_state['pros']) + len(final_state['cons'])) > 0 else 0
+            st.markdown("""
+            <div class="metric-card">
+                <i class="fas fa-star" style="font-size: 2rem; color: #ffc107;"></i>
+                <h3 style="margin: 0.5rem 0;">{:.0f}%</h3>
+                <p style="margin: 0; opacity: 0.7;">긍정 비율</p>
+            </div>
+            """.format(total_score), unsafe_allow_html=True)
+        
+        # 공유 버튼
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            share_text = f"{product_name} 분석 결과: 장점 {len(final_state['pros'])}개, 단점 {len(final_state['cons'])}개"
+            st.markdown(f"""
+            <div style="text-align: center;">
+                <a href="https://twitter.com/intent/tweet?text={share_text}" target="_blank" 
+                   style="margin: 0 10px; color: #1DA1F2;">
+                    <i class="fab fa-twitter" style="font-size: 1.5rem;"></i>
+                </a>
+                <a href="https://www.facebook.com/sharer/sharer.php?u=#" target="_blank" 
+                   style="margin: 0 10px; color: #4267B2;">
+                    <i class="fab fa-facebook" style="font-size: 1.5rem;"></i>
+                </a>
+                <button onclick="navigator.clipboard.writeText('{share_text}')" 
+                        style="margin: 0 10px; background: none; border: none; cursor: pointer;">
+                    <i class="fas fa-link" style="font-size: 1.5rem; color: #666;"></i>
+                </button>
+            </div>
+            """, unsafe_allow_html=True)
     else:
         st.error(f"'{product_name}'에 대한 정보를 찾을 수 없습니다.")
 
@@ -627,16 +1030,35 @@ if search_button and product_name:
 st.markdown("---")
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.info("💡 LangGraph로 구현된 체계적인 검색 프로세스")
+    st.markdown("""
+    <div class="metric-card">
+        <i class="fas fa-brain" style="color: #667eea;"></i>
+        <p>LangGraph로 구현된<br>체계적인 검색 프로세스</p>
+    </div>
+    """, unsafe_allow_html=True)
 with col2:
-    st.info("🔄 DB 우선 검색 → 없으면 웹 크롤링")
+    st.markdown("""
+    <div class="metric-card">
+        <i class="fas fa-sync-alt" style="color: #28a745;"></i>
+        <p>DB 우선 검색<br>→ 없으면 웹 크롤링</p>
+    </div>
+    """, unsafe_allow_html=True)
 with col3:
-    st.info("💾 검색 결과 자동 저장")
+    st.markdown("""
+    <div class="metric-card">
+        <i class="fas fa-save" style="color: #dc3545;"></i>
+        <p>검색 결과<br>자동 저장</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 current_date = datetime.now().strftime('%Y년 %m월 %d일')
 st.markdown(f"""
-<div style="text-align: center; color: #666; padding: 2rem;">
-    <p>마지막 업데이트: {current_date}</p>
-    <p>Powered by LangGraph & OpenAI</p>
+<div style="text-align: center; color: #666; padding: 2rem; margin-top: 2rem;">
+    <p style="margin-bottom: 0.5rem;">
+        <i class="fas fa-clock"></i> 마지막 업데이트: {current_date}
+    </p>
+    <p style="font-size: 0.9rem; opacity: 0.8;">
+        Powered by LangGraph & OpenAI | Made with <i class="fas fa-heart" style="color: #e74c3c;"></i> by Smart Shopping Team
+    </p>
 </div>
 """, unsafe_allow_html=True)
