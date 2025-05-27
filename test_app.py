@@ -548,29 +548,33 @@ def show_loading_animation():
 
 def create_pros_cons_chart(pros_count, cons_count):
     """장단점 차트 생성"""
-    fig = go.Figure(data=[
-        go.Bar(
-            name='장점',
-            x=['분석 결과'],
-            y=[pros_count],
-            marker_color='#28a745',
-            text=f'{pros_count}개',
-            textposition='auto',
-            hovertemplate='장점: %{y}개<extra></extra>'
-        ),
-        go.Bar(
-            name='단점',
-            x=['분석 결과'],
-            y=[cons_count],
-            marker_color='#dc3545',
-            text=f'{cons_count}개',
-            textposition='auto',
-            hovertemplate='단점: %{y}개<extra></extra>'
-        )
-    ])
-    
+    fig = go.Figure()
+
+    # 장점 막대 추가
+    fig.add_trace(go.Bar(
+        name='장점',
+        x=['장점'], # x축을 '장점'으로 설정
+        y=[pros_count],
+        marker_color='#28a745',
+        text=f'{pros_count}개',
+        textposition='auto',
+        hovertemplate='장점: %{y}개<extra></extra>'
+    ))
+
+    # 단점 막대 추가
+    fig.add_trace(go.Bar(
+        name='단점',
+        x=['단점'], # x축을 '단점'으로 설정
+        y=[cons_count],
+        marker_color='#dc3545',
+        text=f'{cons_count}개',
+        textposition='auto',
+        hovertemplate='단점: %{y}개<extra></extra>'
+    ))
+
     fig.update_layout(
-        barmode='group',
+        # barmode를 'group' 대신 기본값(겹치지 않음)으로 사용하거나 제거
+        # barmode='group',
         height=300,
         margin=dict(l=0, r=0, t=30, b=0),
         plot_bgcolor='rgba(0,0,0,0)',
@@ -578,11 +582,14 @@ def create_pros_cons_chart(pros_count, cons_count):
         font=dict(size=14),
         showlegend=True,
         legend=dict(x=0.3, y=1.1, orientation='h'),
-        xaxis=dict(showgrid=False, showticklabels=False),
-        yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.1)'),
-        bargap=0.3
+        xaxis=dict(showgrid=False, showticklabels=True), # showticklabels를 True로 변경
+        yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.1)', zeroline=True, zerolinecolor='rgba(0,0,0,0.2)'), # y축 원점선 추가
+        bargap=0.3 # 막대 간 간격 조절
     )
     
+    # y축 범위 설정 (옵션) - 시각적 차이를 더 명확하게 하기 위해
+    # fig.update_yaxes(range=[0, max(pros_count, cons_count) * 1.2])
+
     return fig
 
 # ========================
