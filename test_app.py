@@ -639,22 +639,69 @@ def create_pros_cons_chart(pros_count, cons_count):
 
 def extract_keywords(texts):
     """텍스트에서 핵심 키워드 추출"""
-    # 불용어 정의
-    stopwords = {'수', '있습니다', '있어요', '있음', '좋습니다', '좋아요', '좋음', 
-                 '나쁩니다', '나빠요', '나쁨', '않습니다', '않아요', '않음',
-                 '입니다', '이다', '되다', '하다', '있다', '없다', '같다',
-                 '위해', '통해', '대해', '매우', '정말', '너무', '조금',
-                 '그리고', '하지만', '그러나', '또한', '때문', '경우'}
+    # 확장된 불용어 정의
+    stopwords = {
+        # 일반 불용어
+        '수', '있습니다', '있어요', '있음', '좋습니다', '좋아요', '좋음', 
+        '나쁩니다', '나빠요', '나쁨', '않습니다', '않아요', '않음',
+        '입니다', '이다', '되다', '하다', '있다', '없다', '같다',
+        '위해', '통해', '대해', '매우', '정말', '너무', '조금',
+        '그리고', '하지만', '그러나', '또한', '때문', '경우',
+        '제공합니다', '제공', '합니다', '해요', '드립니다', '드려요',
+        '위한', '위하여', '따라', '따른', '통한', '대한', '관한',
+        '됩니다', '됨', '되어', '되었습니다', '했습니다', '하는',
+        '이', '그', '저', '것', '것이', '것을', '것은', '것도',
+        '더', '덜', '꽤', '약간', '살짝', '많이', '적게', '조금',
+        '모든', '각', '각각', '여러', '몇', '몇몇', '전체', '일부',
+        '항상', '가끔', '종종', '자주', '언제나', '절대', '전혀',
+        '만', '도', '까지', '부터', '에서', '에게', '으로', '로',
+        '와', '과', '하고', '이고', '이며', '거나', '든지', '라고',
+        '들', '등', '등등', '따위', '및', '또는', '혹은', '즉',
+        '의', '를', '을', '에', '가', '이', '은', '는', '와', '과',
+        '했다', '한다', '하며', '하여', '해서', '하고', '하니', '하면',
+        '그래서', '그러니', '그러므로', '따라서', '때문에', '왜냐하면',
+        '비해', '보다', '처럼', '같이', '만큼', '대로', '듯이',
+        '점', '면', '측면', '부분', '경우', '상황', '상태', '정도',
+        '이런', '저런', '그런', '어떤', '무슨', '어느', '어떻게',
+        '가능', '불가능', '필요', '불필요', '중요', '사용', '이용',
+        '느낌', '기분', '마음', '생각', '의견', '감정', '인상',
+        '한', '두', '세', '네', '몇', '여러', '많은', '적은',
+        '첫', '둘', '셋', '넷', '첫째', '둘째', '셋째', '마지막',
+        '좀', '꼭', '딱', '막', '참', '진짜', '정말로', '확실히',
+        '거의', '대부분', '대체로', '보통', '일반적', '평균적',
+        '특히', '특별히', '주로', '대개', '대체로', '전반적'
+    }
     
     # 모든 텍스트를 결합하고 키워드 추출
     all_text = ' '.join(texts)
+    
+    # 한글만 추출 (영어, 숫자 제외)
     words = re.findall(r'[가-힣]+', all_text)
     
-    # 2글자 이상의 단어만 필터링하고 불용어 제거
-    words = [word for word in words if len(word) >= 2 and word not in stopwords]
+    # 필터링 조건 강화
+    # 1. 2글자 이상
+    # 2. 불용어가 아님
+    # 3. 너무 일반적인 단어 제외
+    filtered_words = []
+    for word in words:
+        if (len(word) >= 2 and 
+            word not in stopwords and
+            not word.endswith('습니다') and
+            not word.endswith('합니다') and
+            not word.endswith('입니다') and
+            not word.endswith('됩니다') and
+            not word.startswith('있') and
+            not word.startswith('없') and
+            not word.startswith('하') and
+            not word.startswith('되') and
+            not word.startswith('않')):
+            filtered_words.append(word)
     
     # 단어 빈도 계산
-    word_freq = Counter(words)
+    word_freq = Counter(filtered_words)
+    
+    # 빈도수가 1인 단어는 제외 (더 중요한 키워드만 남김)
+    word_freq = {word: freq for word, freq in word_freq.items() if freq > 1}
     
     return word_freq
 
@@ -668,6 +715,9 @@ def create_wordcloud(texts, title, color_scheme):
     
     if not word_freq:
         return None
+    
+    # 빈도수 기준으로 상위 키워드만 선택 (최대 40개)
+    top_keywords = dict(sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:40])
     
     # matplotlib 한글 폰트 설정
     import matplotlib.pyplot as plt
@@ -693,7 +743,7 @@ def create_wordcloud(texts, title, color_scheme):
     # 워드클라우드 생성
     plt.figure(figsize=(10, 6), facecolor='white')
     
-    if font_path and os.path.exists(font_path):
+    if font_path and os.path.exists(font_path) and top_keywords:
         try:
             wordcloud = WordCloud(
                 width=800,
@@ -701,12 +751,13 @@ def create_wordcloud(texts, title, color_scheme):
                 background_color='white',
                 colormap=color_scheme,
                 font_path=font_path,
-                relative_scaling=0.5,
-                min_font_size=12,
-                max_words=30,
-                prefer_horizontal=0.7,
-                margin=10
-            ).generate_from_frequencies(word_freq)
+                relative_scaling=0.7,  # 크기 차이를 더 크게
+                min_font_size=14,     # 최소 폰트 크기 증가
+                max_words=30,         # 표시할 단어 수 제한
+                prefer_horizontal=0.8, # 가로 방향 선호도 증가
+                margin=15,            # 여백 증가
+                collocations=False    # 연어 처리 비활성화
+            ).generate_from_frequencies(top_keywords)
             
             plt.imshow(wordcloud, interpolation='bilinear')
             plt.axis('off')
@@ -1603,7 +1654,18 @@ if search_button:
         col1, col2 = st.columns(2)
         
         with col1:
-            top_pros_keywords = extract_keywords(final_state["pros"]).most_common(3)
+            # 장점에서 가장 많이 언급된 구체적인 키워드 추출
+            pros_keywords = extract_keywords(final_state["pros"])
+            if pros_keywords:
+                # 제품 특성과 관련된 키워드만 필터링
+                product_keywords = {
+                    k: v for k, v in pros_keywords.items() 
+                    if len(k) >= 2 and not any(skip in k for skip in ['언급', '회', '개', '점'])
+                }
+                top_pros_keywords = Counter(product_keywords).most_common(3)
+            else:
+                top_pros_keywords = []
+            
             st.markdown(f"""
             <div style="background: rgba(40, 167, 69, 0.1); padding: 1.5rem; border-radius: 15px; 
                         border-left: 4px solid #28a745;">
@@ -1613,13 +1675,39 @@ if search_button:
                 <ul style="margin: 0; padding-left: 1.5rem;">
             """, unsafe_allow_html=True)
             
-            for keyword, count in top_pros_keywords:
-                st.markdown(f"<li><strong>{keyword}</strong> - {count}회 언급</li>", unsafe_allow_html=True)
+            if top_pros_keywords:
+                for keyword, count in top_pros_keywords:
+                    # 키워드가 포함된 원본 문장 찾기
+                    related_sentences = [pro for pro in final_state["pros"] if keyword in pro]
+                    if related_sentences:
+                        # 가장 대표적인 문장 선택
+                        representative = min(related_sentences, key=len)
+                        # 키워드 부분을 강조
+                        highlighted = representative.replace(keyword, f"<strong>{keyword}</strong>")
+                        st.markdown(f"<li>{highlighted}</li>", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"<li><strong>{keyword}</strong> - {count}회 언급</li>", unsafe_allow_html=True)
+            else:
+                # 키워드가 없을 경우 원본 장점 중 짧은 것 3개 표시
+                short_pros = sorted(final_state["pros"], key=len)[:3]
+                for pro in short_pros:
+                    st.markdown(f"<li>{pro}</li>", unsafe_allow_html=True)
             
             st.markdown("</ul></div>", unsafe_allow_html=True)
         
         with col2:
-            top_cons_keywords = extract_keywords(final_state["cons"]).most_common(3)
+            # 단점에서 가장 많이 언급된 구체적인 키워드 추출
+            cons_keywords = extract_keywords(final_state["cons"])
+            if cons_keywords:
+                # 제품 특성과 관련된 키워드만 필터링
+                product_keywords = {
+                    k: v for k, v in cons_keywords.items() 
+                    if len(k) >= 2 and not any(skip in k for skip in ['언급', '회', '개', '점'])
+                }
+                top_cons_keywords = Counter(product_keywords).most_common(3)
+            else:
+                top_cons_keywords = []
+            
             st.markdown(f"""
             <div style="background: rgba(220, 53, 69, 0.1); padding: 1.5rem; border-radius: 15px; 
                         border-left: 4px solid #dc3545;">
@@ -1629,8 +1717,23 @@ if search_button:
                 <ul style="margin: 0; padding-left: 1.5rem;">
             """, unsafe_allow_html=True)
             
-            for keyword, count in top_cons_keywords:
-                st.markdown(f"<li><strong>{keyword}</strong> - {count}회 언급</li>", unsafe_allow_html=True)
+            if top_cons_keywords:
+                for keyword, count in top_cons_keywords:
+                    # 키워드가 포함된 원본 문장 찾기
+                    related_sentences = [con for con in final_state["cons"] if keyword in con]
+                    if related_sentences:
+                        # 가장 대표적인 문장 선택
+                        representative = min(related_sentences, key=len)
+                        # 키워드 부분을 강조
+                        highlighted = representative.replace(keyword, f"<strong>{keyword}</strong>")
+                        st.markdown(f"<li>{highlighted}</li>", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"<li><strong>{keyword}</strong> - {count}회 언급</li>", unsafe_allow_html=True)
+            else:
+                # 키워드가 없을 경우 원본 단점 중 짧은 것 3개 표시
+                short_cons = sorted(final_state["cons"], key=len)[:3]
+                for con in short_cons:
+                    st.markdown(f"<li>{con}</li>", unsafe_allow_html=True)
             
             st.markdown("</ul></div>", unsafe_allow_html=True)
         
