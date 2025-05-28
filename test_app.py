@@ -349,44 +349,6 @@ st.markdown(f"""
         from {{ width: 0%; }}
         to {{ width: 100%; }}
     }}
-    
-    /* 상품 이미지 스타일 추가 */
-    .product-image-container {{
-        background: white;
-        border-radius: 15px;
-        padding: 1.5rem;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        margin: 2rem 0;
-    }}
-    
-    .product-main-image {{
-        border-radius: 10px;
-        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.15);
-        max-width: 100%;
-        height: auto;
-    }}
-    
-    .product-gallery {{
-        display: flex;
-        gap: 1rem;
-        overflow-x: auto;
-        padding: 1rem 0;
-        margin-top: 1rem;
-    }}
-    
-    .product-gallery img {{
-        width: 100px;
-        height: 100px;
-        object-fit: cover;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: transform 0.3s ease;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }}
-    
-    .product-gallery img:hover {{
-        transform: scale(1.1);
-    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -435,117 +397,6 @@ class SearchState(TypedDict):
     sources: List[dict]
     messages: Annotated[List[Union[HumanMessage, AIMessage]], operator.add]
     error: str
-    product_images: List[dict]  # 상품 이미지 추가
-
-# ========================
-# 상품 이미지 검색 함수 추가
-# ========================
-
-def search_product_images(product_name, naver_client_id, naver_client_secret):
-    """네이버 쇼핑 API를 사용하여 상품 이미지 검색"""
-    if not naver_client_id or not naver_client_secret:
-        return []
-    
-    url = "https://openapi.naver.com/v1/search/shop"
-    headers = {
-        "X-Naver-Client-Id": naver_client_id,
-        "X-Naver-Client-Secret": naver_client_secret
-    }
-    params = {
-        "query": product_name,
-        "display": 5,  # 상위 5개 상품
-        "sort": "sim"  # 정확도순
-    }
-    
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        if response.status_code == 200:
-            data = response.json()
-            products = []
-            
-            for item in data.get('items', []):
-                # HTML 태그 제거
-                title = BeautifulSoup(item['title'], "html.parser").get_text()
-                
-                product_info = {
-                    'title': title,
-                    'image': item.get('image', ''),
-                    'link': item.get('link', ''),
-                    'lprice': item.get('lprice', '0'),
-                    'mallName': item.get('mallName', ''),
-                    'brand': item.get('brand', '')
-                }
-                
-                # 이미지 URL이 있는 경우만 추가
-                if product_info['image']:
-                    products.append(product_info)
-            
-            return products
-        else:
-            return []
-            
-    except Exception as e:
-        print(f"상품 이미지 검색 오류: {str(e)}")
-        return []
-
-def display_product_images(products):
-    """상품 이미지 표시"""
-    if not products:
-        return
-    
-    st.markdown("""
-    <div style="text-align: center; margin: 2rem 0;">
-        <h3 style="color: #667eea; margin-bottom: 1.5rem;">📷 상품 이미지</h3>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 메인 이미지
-    main_product = products[0]
-    
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        if main_product['image']:
-            st.image(main_product['image'], caption=main_product['title'], use_container_width=True)
-    
-    with col2:
-        # 가격 포맷팅
-        lprice = int(main_product['lprice'])
-        price_formatted = f"{lprice:,}원" if lprice > 0 else "가격 정보 없음"
-        
-        st.markdown(f"""
-        <div style="padding: 1.5rem;">
-            <h4>{main_product['title']}</h4>
-            <p style="font-size: 1.5rem; color: #667eea; font-weight: bold;">
-                최저가: {price_formatted}
-            </p>
-            <p>판매처: {main_product['mallName'] or '정보 없음'}</p>
-            <p>브랜드: {main_product['brand'] or '정보 없음'}</p>
-            <a href="{main_product['link']}" target="_blank" 
-               style="display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; 
-                      background: #667eea; color: white; text-decoration: none; 
-                      border-radius: 25px; font-weight: 600;">
-                상품 상세보기 →
-            </a>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # 추가 이미지 갤러리
-    if len(products) > 1:
-        st.markdown("""
-        <div style="margin-top: 2rem;">
-            <h4 style="color: #667eea;">관련 상품</h4>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        cols = st.columns(len(products[1:4]))  # 최대 3개까지만 표시
-        for idx, (col, product) in enumerate(zip(cols, products[1:4])):
-            with col:
-                if product['image']:
-                    st.image(product['image'], caption=product['title'], use_container_width=True)
-                    lprice = int(product['lprice'])
-                    price_formatted = f"{lprice:,}원" if lprice > 0 else "가격 정보 없음"
-                    st.write(f"**{price_formatted}**")
 
 # ========================
 # 크롤링 클래스
@@ -1166,8 +1017,6 @@ def get_sample_coupang_product(product_name):
         "description": f"{product_name}의 다양한 옵션을 쿠팡에서 확인해보세요!"
     }
     return sample_product
-
-def create_summary_metrics(pros, cons):
     """요약 메트릭 시각화"""
     # 텍스트 통계
     total_reviews = len(pros) + len(cons)
@@ -1260,13 +1109,6 @@ def crawl_web(state: SearchState) -> SearchState:
     state["messages"].append(
         HumanMessage(content=f"🌐 웹에서 '{product_name}' 리뷰 수집 시작...")
     )
-    
-    # 상품 이미지 검색 추가
-    state["product_images"] = search_product_images(product_name, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET)
-    if state["product_images"]:
-        state["messages"].append(
-            AIMessage(content=f"📷 {len(state['product_images'])}개의 상품 이미지를 찾았습니다.")
-        )
     
     # 샘플 데이터 (API 키가 없을 때)
     if not OPENAI_API_KEY:
@@ -1409,10 +1251,6 @@ def process_results(state: SearchState) -> SearchState:
         state["pros"] = [item['content'] for item in data if item['type'] == 'pro']
         state["cons"] = [item['content'] for item in data if item['type'] == 'con']
         state["sources"] = []
-        
-        # DB에서 가져온 경우에도 상품 이미지 검색
-        product_name = state["product_name"]
-        state["product_images"] = search_product_images(product_name, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET)
         
         state["messages"].append(
             AIMessage(content=f"📋 결과 정리 완료: 장점 {len(state['pros'])}개, 단점 {len(state['cons'])}개")
@@ -1627,8 +1465,7 @@ if search_button:
             "cons": [],
             "sources": [],
             "messages": [],
-            "error": "",
-            "product_images": []  # 상품 이미지 추가
+            "error": ""
         }
         
         # 워크플로우 실행
@@ -1659,10 +1496,469 @@ if search_button:
         </div>
         """, unsafe_allow_html=True)
         
-        # 상품 이미지 표시 (상세 분석 전에)
-        if final_state.get("product_images"):
-            display_product_images(final_state["product_images"])
-            st.markdown("---")
-        
         # 장단점 상세 표시 (워드클라우드보다 먼저)
+        st.markdown("---")
         st.markdown("### 📋 상세 분석 결과")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            <div class="pros-section fade-in">
+                <h3 style="color: #28a745; margin-bottom: 1.5rem;">
+                    <i class="fas fa-check-circle"></i> 장점
+                </h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if final_state["pros"]:
+                for idx, pro in enumerate(final_state["pros"], 1):
+                    st.markdown(f"""
+                    <div class="pros-item">
+                        <span style="color: #28a745; font-weight: bold;">
+                            <i class="fas fa-check"></i> {idx}.
+                        </span> {pro}
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.write("장점 정보가 없습니다.")
+        
+        with col2:
+            st.markdown("""
+            <div class="cons-section fade-in">
+                <h3 style="color: #dc3545; margin-bottom: 1.5rem;">
+                    <i class="fas fa-times-circle"></i> 단점
+                </h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if final_state["cons"]:
+                for idx, con in enumerate(final_state["cons"], 1):
+                    st.markdown(f"""
+                    <div class="cons-item">
+                        <span style="color: #dc3545; font-weight: bold;">
+                            <i class="fas fa-times"></i> {idx}.
+                        </span> {con}
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.write("단점 정보가 없습니다.")
+        
+        # 워드클라우드 표시
+        st.markdown("---")
+        st.markdown("### 🔤 키워드 분석")
+        display_wordclouds(final_state["pros"], final_state["cons"])
+        
+        # 심층 분석 섹션 - 수정된 부분
+        st.markdown("---")
+        st.markdown("### 📊 심층 분석")
+        
+        # 카테고리별 장단점 분포 (레이더 차트)와 해석
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            comparison_chart = create_comparison_chart(final_state["pros"], final_state["cons"])
+            if comparison_chart:
+                st.plotly_chart(comparison_chart, use_container_width=True)
+            else:
+                st.info("카테고리별 분석을 위한 데이터가 부족합니다.")
+        
+        with col2:
+            # 레이더 차트 해석 섹션
+            if final_state["pros"] or final_state["cons"]:
+                # 카테고리별 분석을 위한 데이터 추출
+                categories = {
+                    '성능': ['성능', '속도', '빠르', '느리', '렉', '버벅', '프로세서', 'CPU', 'GPU', '메모리'],
+                    '디자인': ['디자인', '외관', '예쁘', '이쁘', '못생', '색상', '모양', '두께', '얇'],
+                    '가격': ['가격', '비싸', '저렴', '가성비', '비용', '돈', '할인', '세일'],
+                    '품질': ['품질', '마감', '재질', '튼튼', '약하', '고장', '내구성', '견고'],
+                    '기능': ['기능', '편의', '편리', '불편', '사용', '조작', '인터페이스'],
+                    '배터리': ['배터리', '충전', '전원', '지속', '방전'],
+                    '화면': ['화면', '디스플레이', '선명', '밝기', '해상도'],
+                    '기타': []
+                }
+                
+                # 각 카테고리별 장단점 수 계산
+                category_pros = {cat: 0 for cat in categories}
+                category_cons = {cat: 0 for cat in categories}
+                
+                # 장점 분류
+                for pro in final_state["pros"]:
+                    categorized = False
+                    for cat, keywords in categories.items():
+                        if cat != '기타' and any(keyword in pro for keyword in keywords):
+                            category_pros[cat] += 1
+                            categorized = True
+                            break
+                    if not categorized:
+                        category_pros['기타'] += 1
+                
+                # 단점 분류
+                for con in final_state["cons"]:
+                    categorized = False
+                    for cat, keywords in categories.items():
+                        if cat != '기타' and any(keyword in con for keyword in keywords):
+                            category_cons[cat] += 1
+                            categorized = True
+                            break
+                    if not categorized:
+                        category_cons['기타'] += 1
+                
+                # 가장 강한 장점 카테고리
+                strongest_pro_cat = max(category_pros.items(), key=lambda x: x[1])
+                # 가장 큰 단점 카테고리  
+                strongest_con_cat = max(category_cons.items(), key=lambda x: x[1])
+                
+                # 균형잡힌 카테고리 (장단점 차이가 적은)
+                balanced_categories = []
+                for cat in categories:
+                    if category_pros[cat] > 0 and category_cons[cat] > 0:
+                        diff = abs(category_pros[cat] - category_cons[cat])
+                        if diff <= 1:
+                            balanced_categories.append(cat)
+                
+                st.markdown("""
+                <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); 
+                            padding: 2rem; border-radius: 20px; border-left: 5px solid #667eea;">
+                    <h4 style="color: #667eea; margin-bottom: 1.5rem; text-align: center;">
+                        <i class="fas fa-chart-line"></i> 카테고리별 분석 인사이트
+                    </h4>
+                """, unsafe_allow_html=True)
+                
+                # 주요 강점 분석
+                if strongest_pro_cat[1] > 0:
+                    st.markdown(f"""
+                    <div style="background: rgba(40, 167, 69, 0.1); padding: 1.2rem; 
+                                border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid #28a745;">
+                        <h5 style="color: #28a745; margin-bottom: 0.8rem;">
+                            <i class="fas fa-star"></i> 최고 강점 영역
+                        </h5>
+                        <p style="margin: 0; line-height: 1.6; color: #2d5016;">
+                            <strong>"{strongest_pro_cat[0]}"</strong> 분야에서 가장 높은 평가를 받고 있습니다. 
+                            총 <strong>{strongest_pro_cat[1]}개</strong>의 긍정적인 의견이 집중되어 있어, 
+                            이 제품의 핵심 경쟁력으로 보입니다.
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # 주요 개선점 분석
+                if strongest_con_cat[1] > 0:
+                    st.markdown(f"""
+                    <div style="background: rgba(220, 53, 69, 0.1); padding: 1.2rem; 
+                                border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid #dc3545;">
+                        <h5 style="color: #dc3545; margin-bottom: 0.8rem;">
+                            <i class="fas fa-exclamation-triangle"></i> 주요 개선 필요 영역
+                        </h5>
+                        <p style="margin: 0; line-height: 1.6; color: #721c24;">
+                            <strong>"{strongest_con_cat[0]}"</strong> 부분에서 가장 많은 불만이 제기되고 있습니다. 
+                            총 <strong>{strongest_con_cat[1]}개</strong>의 개선 요청이 있어, 
+                            구매 전 신중한 검토가 필요한 영역입니다.
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # 균형잡힌 영역 분석
+                if balanced_categories:
+                    st.markdown(f"""
+                    <div style="background: rgba(255, 193, 7, 0.1); padding: 1.2rem; 
+                                border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid #ffc107;">
+                        <h5 style="color: #d39e00; margin-bottom: 0.8rem;">
+                            <i class="fas fa-balance-scale"></i> 균형잡힌 영역
+                        </h5>
+                        <p style="margin: 0; line-height: 1.6; color: #533f03;">
+                            <strong>{', '.join(balanced_categories[:2])}</strong> 영역에서는 장단점이 고르게 나타나고 있습니다. 
+                            개인의 사용 패턴과 선호도에 따라 만족도가 달라질 수 있는 부분입니다.
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+
+                
+                st.markdown("</div>", unsafe_allow_html=True)
+            else:
+                st.info("분석할 데이터가 부족합니다.")
+        
+        # 추가 인사이트
+        st.markdown("---")
+        
+        # 주요 발견사항
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # 장점에서 가장 많이 언급된 구체적인 키워드 추출
+            pros_keywords = extract_keywords(final_state["pros"])
+            if pros_keywords and isinstance(pros_keywords, dict):
+                # 제품 특성과 관련된 키워드만 필터링
+                product_keywords = {
+                    k: v for k, v in pros_keywords.items() 
+                    if len(k) >= 2 and not any(skip in k for skip in ['언급', '회', '개', '점'])
+                }
+                if product_keywords:
+                    sorted_keywords = sorted(product_keywords.items(), key=lambda x: x[1], reverse=True)[:3]
+                    top_pros_keywords = sorted_keywords
+                else:
+                    top_pros_keywords = []
+            else:
+                top_pros_keywords = []
+            
+            st.markdown(f"""
+            <div style="background: rgba(40, 167, 69, 0.1); padding: 1.5rem; border-radius: 15px; 
+                        border-left: 4px solid #28a745;">
+                <h5 style="color: #28a745; margin-bottom: 1rem;">
+                    <i class="fas fa-star"></i> 핵심 강점
+                </h5>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+            """, unsafe_allow_html=True)
+            
+            if top_pros_keywords:
+                for keyword, count in top_pros_keywords:
+                    # 키워드가 포함된 원본 문장 찾기
+                    related_sentences = [pro for pro in final_state["pros"] if keyword in pro]
+                    if related_sentences:
+                        # 가장 대표적인 문장 선택
+                        representative = min(related_sentences, key=len)
+                        # 키워드 부분을 강조
+                        highlighted = representative.replace(keyword, f"<strong>{keyword}</strong>")
+                        st.markdown(f"<li>{highlighted}</li>", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"<li><strong>{keyword}</strong> 관련 특징</li>", unsafe_allow_html=True)
+            else:
+                # 키워드가 없을 경우 원본 장점 중 짧은 것 3개 표시
+                short_pros = sorted(final_state["pros"], key=len)[:3]
+                for pro in short_pros:
+                    st.markdown(f"<li>{pro}</li>", unsafe_allow_html=True)
+            
+            st.markdown("</ul></div>", unsafe_allow_html=True)
+        
+        with col2:
+            # 단점에서 가장 많이 언급된 구체적인 키워드 추출
+            cons_keywords = extract_keywords(final_state["cons"])
+            if cons_keywords and isinstance(cons_keywords, dict):
+                # 제품 특성과 관련된 키워드만 필터링
+                product_keywords = {
+                    k: v for k, v in cons_keywords.items() 
+                    if len(k) >= 2 and not any(skip in k for skip in ['언급', '회', '개', '점'])
+                }
+                if product_keywords:
+                    sorted_keywords = sorted(product_keywords.items(), key=lambda x: x[1], reverse=True)[:3]
+                    top_cons_keywords = sorted_keywords
+                else:
+                    top_cons_keywords = []
+            else:
+                top_cons_keywords = []
+            
+            st.markdown(f"""
+            <div style="background: rgba(220, 53, 69, 0.1); padding: 1.5rem; border-radius: 15px; 
+                        border-left: 4px solid #dc3545;">
+                <h5 style="color: #dc3545; margin-bottom: 1rem;">
+                    <i class="fas fa-exclamation-triangle"></i> 주요 개선점
+                </h5>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+            """, unsafe_allow_html=True)
+            
+            if top_cons_keywords:
+                for keyword, count in top_cons_keywords:
+                    # 키워드가 포함된 원본 문장 찾기
+                    related_sentences = [con for con in final_state["cons"] if keyword in con]
+                    if related_sentences:
+                        # 가장 대표적인 문장 선택
+                        representative = min(related_sentences, key=len)
+                        # 키워드 부분을 강조
+                        highlighted = representative.replace(keyword, f"<strong>{keyword}</strong>")
+                        st.markdown(f"<li>{highlighted}</li>", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"<li><strong>{keyword}</strong> 관련 문제</li>", unsafe_allow_html=True)
+            else:
+                # 키워드가 없을 경우 원본 단점 중 짧은 것 3개 표시
+                short_cons = sorted(final_state["cons"], key=len)[:3]
+                for con in short_cons:
+                    st.markdown(f"<li>{con}</li>", unsafe_allow_html=True)
+            
+            st.markdown("</ul></div>", unsafe_allow_html=True)
+        
+        # 추천 상품 섹션 추가
+        st.markdown("---")
+        st.markdown("""
+        <div style="text-align: center; margin: 2rem 0;">
+            <h4 style="color: #667eea; margin-bottom: 1rem;">
+                <i class="fas fa-shopping-cart"></i> 개선점은 있지만 핵심 강점을 고려해서 추천해주는 상품은 다음과 같습니다
+            </h4>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 쿠팡 상품 추천 (승인용)
+        try:
+            # 쿠팡 검색 링크 생성 (API 키 없이)
+            coupang_link = generate_coupang_search_link(final_state["product_name"])
+            
+            # 샘플 상품 정보 생성
+            product = get_sample_coupang_product(final_state["product_name"])
+            
+            # 상품 카드 표시
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.markdown(f"""
+                <div style="background: white; border-radius: 20px; padding: 2rem; 
+                            box-shadow: 0 8px 25px rgba(0,0,0,0.1); text-align: center;
+                            border: 2px solid #667eea;">
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="width: 200px; height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                    border-radius: 15px; display: flex; align-items: center; 
+                                    justify-content: center; margin: 0 auto; color: white;
+                                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                            <div style="text-align: center;">
+                                <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 0.5rem;"></i>
+                                <div style="font-size: 1.2rem; font-weight: bold;">COUPANG</div>
+                            </div>
+                        </div>
+                    </div>
+                    <h5 style="color: #333; margin-bottom: 1rem; line-height: 1.4;">
+                        {product['productName']}
+                    </h5>
+                    <div style="margin-bottom: 1rem;">
+                        <span style="font-size: 1.3rem; font-weight: bold; color: #667eea;">
+                            쿠팡에서 {product['productPrice']} 확인하기
+                        </span>
+                        <div style="margin-top: 0.5rem;">
+                            <span style="background: #667eea; color: white; padding: 0.2rem 0.5rem; 
+                                         border-radius: 12px; font-size: 0.8rem; font-weight: bold;">
+                                🚀 로켓배송 가능
+                            </span>
+                        </div>
+                    </div>
+                    <a href="{coupang_link}" target="_blank" 
+                       style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                              color: white; padding: 12px 30px; border-radius: 25px; 
+                              text-decoration: none; font-weight: 600; font-size: 1.1rem;
+                              box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                              transition: all 0.3s ease;">
+                        <i class="fas fa-external-link-alt"></i> 쿠팡에서 최저가 확인하기
+                    </a>
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #f0f4ff; 
+                                border-radius: 10px; border-left: 4px solid #667eea;">
+                        <div style="font-size: 0.9rem; color: #666; line-height: 1.4;">
+                            <i class="fas fa-store"></i> <strong>쿠팡</strong> - 믿고 사는 즐거움<br>
+                            <i class="fas fa-truck"></i> 전국 당일/다음날 배송<br>
+                            <i class="fas fa-shield-alt"></i> 100% 정품보장<br>
+                            <i class="fas fa-star"></i> 실시간 리뷰 & 평점 확인
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem; padding: 0.8rem; background: #f8f9fa; 
+                                border-radius: 8px; font-size: 0.85rem; color: #666;">
+                        <i class="fas fa-info-circle"></i> 
+                        AI가 분석한 <strong>핵심 강점</strong>을 고려하여 쿠팡에서 최적의 상품을 찾아보세요!
+                    </div>
+                    <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #999;">
+                        * 이 사이트는 쿠팡 파트너스 승인을 위해 제작되었습니다.
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+        except Exception as e:
+            # 오류 발생 시에도 쿠팡 링크 제공
+            coupang_link = generate_coupang_search_link(final_state["product_name"])
+            
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.markdown(f"""
+                <div style="background: white; border-radius: 20px; padding: 2rem; 
+                            box-shadow: 0 8px 25px rgba(0,0,0,0.1); text-align: center;
+                            border: 2px solid #667eea;">
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="width: 200px; height: 200px; background: #f0f4ff; 
+                                    border-radius: 15px; display: flex; align-items: center; 
+                                    justify-content: center; margin: 0 auto; color: #667eea;">
+                            <i class="fas fa-search" style="font-size: 3rem;"></i>
+                        </div>
+                    </div>
+                    <h5 style="color: #333; margin-bottom: 1rem; line-height: 1.4;">
+                        "{final_state["product_name"]}" 쿠팡 검색
+                    </h5>
+                    <div style="margin-bottom: 1.5rem;">
+                        <span style="font-size: 1.2rem; color: #666;">
+                            쿠팡에서 최저가를 확인해보세요!
+                        </span>
+                    </div>
+                    <a href="{coupang_link}" target="_blank" 
+                       style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                              color: white; padding: 12px 30px; border-radius: 25px; 
+                              text-decoration: none; font-weight: 600; font-size: 1.1rem;
+                              box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                        <i class="fas fa-external-link-alt"></i> 쿠팡에서 검색하기
+                    </a>
+                </div>
+                """, unsafe_allow_html=True)
+        
+                # 출처 (웹 크롤링인 경우)
+        if final_state["sources"]:
+            with st.expander("📚 출처 보기"):
+                for idx, source in enumerate(final_state["sources"], 1):
+                    st.markdown(f"""
+                    <div style="padding: 0.5rem; margin: 0.3rem 0;">
+                        <i class="fas fa-link"></i> {idx}. 
+                        <a href="{source['link']}" target="_blank" style="color: {secondary_text};">
+                            {source['title']}
+                        </a>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+        # 공유 버튼
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            share_text = f"{product_name} 분석 결과: 장점 {len(final_state['pros'])}개, 단점 {len(final_state['cons'])}개"
+            st.markdown(f"""
+            <div style="text-align: center;">
+                <a href="https://twitter.com/intent/tweet?text={share_text}" target="_blank" 
+                   style="margin: 0 10px; color: #1DA1F2;">
+                    <i class="fab fa-twitter" style="font-size: 1.5rem;"></i>
+                </a>
+                <a href="https://www.facebook.com/sharer/sharer.php?u=#" target="_blank" 
+                   style="margin: 0 10px; color: #4267B2;">
+                    <i class="fab fa-facebook" style="font-size: 1.5rem;"></i>
+                </a>
+                <button onclick="navigator.clipboard.writeText('{share_text}')" 
+                        style="margin: 0 10px; background: none; border: none; cursor: pointer;">
+                    <i class="fas fa-link" style="font-size: 1.5rem; color: #666;"></i>
+                </button>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.error(f"'{product_name}'에 대한 정보를 찾을 수 없습니다.")
+
+# 하단 정보
+st.markdown("---")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.markdown("""
+    <div class="metric-card">
+        <i class="fas fa-brain" style="color: #667eea;"></i>
+        <p>LangGraph로 구현된<br>체계적인 검색 프로세스</p>
+    </div>
+    """, unsafe_allow_html=True)
+with col2:
+    st.markdown("""
+    <div class="metric-card">
+        <i class="fas fa-sync-alt" style="color: #28a745;"></i>
+        <p>DB 우선 검색<br>→ 없으면 웹 크롤링</p>
+    </div>
+    """, unsafe_allow_html=True)
+with col3:
+    st.markdown("""
+    <div class="metric-card">
+        <i class="fas fa-save" style="color: #dc3545;"></i>
+        <p>검색 결과<br>자동 저장</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+current_date = datetime.now().strftime('%Y년 %m월 %d일')
+st.markdown(f"""
+<div style="text-align: center; color: #666; padding: 2rem; margin-top: 2rem;">
+    <p style="margin-bottom: 0.5rem;">
+        <i class="fas fa-clock"></i> 마지막 업데이트: {current_date}
+    </p>
+    <p style="font-size: 0.9rem; opacity: 0.8;">
+        Powered by LangGraph & OpenAI | Made with <i class="fas fa-heart" style="color: #e74c3c;"></i> by Smart Shopping Team
+    </p>
+</div>
+""", unsafe_allow_html=True)
