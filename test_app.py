@@ -831,104 +831,187 @@ def display_wordclouds(pros, cons):
                                         for word, count in top_keywords])
                 st.markdown(keyword_html, unsafe_allow_html=True)
 
-def create_trend_chart(sources):
-    """시간별 트렌드 차트 생성"""
-    if not sources:
+def create_comparison_chart(pros, cons):
+    """장단점 비교 시각화"""
+    # 카테고리별 분류
+    categories = {
+        '성능': ['성능', '속도', '빠르', '느리', '렉', '버벅', '프로세서', 'CPU', 'GPU', '메모리'],
+        '디자인': ['디자인', '외관', '예쁘', '이쁘', '못생', '색상', '모양', '두께', '얇'],
+        '가격': ['가격', '비싸', '저렴', '가성비', '비용', '돈', '할인', '세일'],
+        '품질': ['품질', '마감', '재질', '튼튼', '약하', '고장', '내구성', '견고'],
+        '기능': ['기능', '편의', '편리', '불편', '사용', '조작', '인터페이스'],
+        '배터리': ['배터리', '충전', '전원', '지속', '방전'],
+        '화면': ['화면', '디스플레이', '선명', '밝기', '해상도'],
+        '기타': []
+    }
+    
+    # 각 카테고리별 장단점 수 계산
+    category_pros = {cat: 0 for cat in categories}
+    category_cons = {cat: 0 for cat in categories}
+    
+    # 장점 분류
+    for pro in pros:
+        categorized = False
+        for cat, keywords in categories.items():
+            if cat != '기타' and any(keyword in pro for keyword in keywords):
+                category_pros[cat] += 1
+                categorized = True
+                break
+        if not categorized:
+            category_pros['기타'] += 1
+    
+    # 단점 분류
+    for con in cons:
+        categorized = False
+        for cat, keywords in categories.items():
+            if cat != '기타' and any(keyword in con for keyword in keywords):
+                category_cons[cat] += 1
+                categorized = True
+                break
+        if not categorized:
+            category_cons['기타'] += 1
+    
+    # 데이터가 있는 카테고리만 필터링
+    active_categories = [cat for cat in categories if category_pros[cat] > 0 or category_cons[cat] > 0]
+    
+    if not active_categories:
         return None
     
-    # 날짜별로 그룹화
-    date_counts = {}
-    for source in sources:
-        date_str = source.get('date', '')
-        if date_str:
-            # 날짜 형식 변환 (YYYYMMDD -> YYYY-MM-DD)
-            try:
-                if len(date_str) == 8:
-                    formatted_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
-                    date = datetime.strptime(formatted_date, '%Y-%m-%d')
-                    month_year = date.strftime('%Y-%m')
-                    date_counts[month_year] = date_counts.get(month_year, 0) + 1
-            except:
-                pass
-    
-    if not date_counts:
-        # 샘플 데이터 생성 (실제 날짜가 없을 경우)
-        current_date = datetime.now()
-        for i in range(6):
-            month = current_date.replace(day=1) - pd.DateOffset(months=i)
-            month_str = month.strftime('%Y-%m')
-            date_counts[month_str] = np.random.randint(5, 20)
-    
-    # 정렬
-    sorted_dates = sorted(date_counts.items())
-    dates = [item[0] for item in sorted_dates]
-    counts = [item[1] for item in sorted_dates]
-    
-    # 차트 생성
+    # 레이더 차트 생성
     fig = go.Figure()
     
-    # 선 그래프
-    fig.add_trace(go.Scatter(
-        x=dates,
-        y=counts,
-        mode='lines+markers',
-        name='리뷰 수',
-        line=dict(color='#667eea', width=3),
-        marker=dict(size=10, color='#667eea'),
-        fill='tozeroy',
-        fillcolor='rgba(102, 126, 234, 0.1)'
+    # 장점 데이터
+    fig.add_trace(go.Scatterpolar(
+        r=[category_pros[cat] for cat in active_categories],
+        theta=active_categories,
+        fill='toself',
+        fillcolor='rgba(40, 167, 69, 0.3)',
+        line=dict(color='#28a745', width=2),
+        name='장점',
+        hovertemplate='%{theta}<br>장점: %{r}개<extra></extra>'
     ))
     
-    # 레이아웃 설정
+    # 단점 데이터
+    fig.add_trace(go.Scatterpolar(
+        r=[category_cons[cat] for cat in active_categories],
+        theta=active_categories,
+        fill='toself',
+        fillcolor='rgba(220, 53, 69, 0.3)',
+        line=dict(color='#dc3545', width=2),
+        name='단점',
+        hovertemplate='%{theta}<br>단점: %{r}개<extra></extra>'
+    ))
+    
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, max(max(category_pros.values()), max(category_cons.values())) + 1]
+            ),
+            bgcolor='rgba(0,0,0,0)'
+        ),
+        showlegend=True,
+        title={
+            'text': '🎯 카테고리별 장단점 분포',
+            'font': {'size': 20, 'color': text_color},
+            'x': 0.5,
+            'xanchor': 'center'
+        },
+        height=400,
+        margin=dict(l=80, r=80, t=80, b=80),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        legend=dict(x=0.85, y=0.95)
+    )
+    
+    return fig
+
+def create_keyword_ranking(pros, cons):
+    """상위 키워드 랭킹 차트"""
+    # 전체 키워드 추출
+    all_keywords = extract_keywords(pros + cons)
+    
+    if not all_keywords:
+        return None
+    
+    # 상위 10개 키워드
+    top_keywords = all_keywords.most_common(10)
+    words = [item[0] for item in top_keywords]
+    counts = [item[1] for item in top_keywords]
+    
+    # 각 키워드가 장점/단점 중 어디에 더 많이 나타나는지 확인
+    pros_text = ' '.join(pros)
+    cons_text = ' '.join(cons)
+    
+    colors = []
+    for word in words:
+        pros_count = pros_text.count(word)
+        cons_count = cons_text.count(word)
+        if pros_count > cons_count:
+            colors.append('#28a745')
+        elif cons_count > pros_count:
+            colors.append('#dc3545')
+        else:
+            colors.append('#6c757d')
+    
+    # 수평 막대 차트
+    fig = go.Figure(go.Bar(
+        y=words[::-1],  # 역순으로 표시 (상위가 위로)
+        x=counts[::-1],
+        orientation='h',
+        marker=dict(
+            color=colors[::-1],
+            line=dict(color='rgba(0,0,0,0.2)', width=1)
+        ),
+        text=[f'{count}회' for count in counts[::-1]],
+        textposition='auto',
+        hovertemplate='%{y}<br>언급 횟수: %{x}회<extra></extra>'
+    ))
+    
     fig.update_layout(
         title={
-            'text': '📈 월별 리뷰 추이',
-            'font': {'size': 20, 'color': text_color}
+            'text': '🏆 TOP 10 키워드 랭킹',
+            'font': {'size': 20, 'color': text_color},
+            'x': 0.5,
+            'xanchor': 'center'
         },
-        xaxis_title='날짜',
-        yaxis_title='리뷰 수',
-        height=350,
-        margin=dict(l=0, r=0, t=50, b=0),
+        xaxis_title='언급 횟수',
+        yaxis_title='',
+        height=400,
+        margin=dict(l=100, r=20, t=80, b=40),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         xaxis=dict(
             showgrid=True,
-            gridcolor='rgba(0,0,0,0.1)',
-            showline=True,
-            linecolor='rgba(0,0,0,0.2)'
+            gridcolor='rgba(0,0,0,0.1)'
         ),
         yaxis=dict(
-            showgrid=True,
-            gridcolor='rgba(0,0,0,0.1)',
-            showline=True,
-            linecolor='rgba(0,0,0,0.2)'
-        ),
-        hovermode='x unified'
+            showgrid=False
+        )
     )
     
-    # 주석 추가 (최고점)
-    if counts:
-        max_idx = counts.index(max(counts))
-        fig.add_annotation(
-            x=dates[max_idx],
-            y=counts[max_idx],
-            text=f"최고: {counts[max_idx]}건",
-            showarrow=True,
-            arrowhead=2,
-            arrowsize=1,
-            arrowwidth=2,
-            arrowcolor="#667eea",
-            ax=0,
-            ay=-40,
-            font=dict(size=12, color=text_color),
-            bgcolor="white",
-            bordercolor="#667eea",
-            borderwidth=2,
-            borderpad=4,
-            opacity=0.9
-        )
-    
     return fig
+
+def create_summary_metrics(pros, cons):
+    """요약 메트릭 시각화"""
+    # 텍스트 통계
+    total_reviews = len(pros) + len(cons)
+    avg_length_pros = np.mean([len(p) for p in pros]) if pros else 0
+    avg_length_cons = np.mean([len(c) for c in cons]) if cons else 0
+    
+    # 키워드 다양성
+    pros_keywords = extract_keywords(pros)
+    cons_keywords = extract_keywords(cons)
+    
+    diversity_score = len(set(pros_keywords.keys()) | set(cons_keywords.keys()))
+    
+    return {
+        'total_reviews': total_reviews,
+        'avg_length_pros': avg_length_pros,
+        'avg_length_cons': avg_length_cons,
+        'diversity_score': diversity_score,
+        'positive_ratio': len(pros) / total_reviews * 100 if total_reviews > 0 else 0
+    }
 
 # ========================
 # LangGraph 노드 함수들
@@ -1329,45 +1412,114 @@ if search_button and product_name:
         st.markdown("### 🔤 키워드 분석")
         display_wordclouds(final_state["pros"], final_state["cons"])
         
-        # 시간별 트렌드 차트
+        # 시간별 트렌드 차트 대신 다른 시각화
         st.markdown("---")
-        st.markdown("### 📊 리뷰 트렌드")
+        st.markdown("### 📊 심층 분석")
         
-        # 트렌드 차트 생성 및 표시
-        trend_chart = create_trend_chart(final_state.get("sources", []))
-        if trend_chart:
-            st.plotly_chart(trend_chart, use_container_width=True)
+        # 카테고리별 장단점 분포 (레이더 차트)
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            comparison_chart = create_comparison_chart(final_state["pros"], final_state["cons"])
+            if comparison_chart:
+                st.plotly_chart(comparison_chart, use_container_width=True)
+            else:
+                st.info("카테고리별 분석을 위한 데이터가 부족합니다.")
+        
+        with col2:
+            # 키워드 랭킹 차트
+            ranking_chart = create_keyword_ranking(final_state["pros"], final_state["cons"])
+            if ranking_chart:
+                st.plotly_chart(ranking_chart, use_container_width=True)
+            else:
+                st.info("키워드 랭킹을 표시할 데이터가 부족합니다.")
+        
+        # 요약 통계
+        metrics = create_summary_metrics(final_state["pros"], final_state["cons"])
+        
+        st.markdown("---")
+        st.markdown("### 📈 분석 인사이트")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); 
+                        padding: 1.5rem; border-radius: 15px; text-align: center; height: 120px;">
+                <i class="fas fa-comments" style="font-size: 2rem; color: #1976d2;"></i>
+                <h3 style="margin: 0.5rem 0; color: #1976d2;">{metrics['total_reviews']}</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #555;">전체 리뷰 수</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); 
+                        padding: 1.5rem; border-radius: 15px; text-align: center; height: 120px;">
+                <i class="fas fa-percentage" style="font-size: 2rem; color: #388e3c;"></i>
+                <h3 style="margin: 0.5rem 0; color: #388e3c;">{metrics['positive_ratio']:.0f}%</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #555;">긍정 비율</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); 
+                        padding: 1.5rem; border-radius: 15px; text-align: center; height: 120px;">
+                <i class="fas fa-lightbulb" style="font-size: 2rem; color: #7b1fa2;"></i>
+                <h3 style="margin: 0.5rem 0; color: #7b1fa2;">{metrics['diversity_score']}</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #555;">키워드 다양성</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            balance_score = 100 - abs(len(final_state['pros']) - len(final_state['cons'])) / max(len(final_state['pros']), len(final_state['cons']), 1) * 100
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); 
+                        padding: 1.5rem; border-radius: 15px; text-align: center; height: 120px;">
+                <i class="fas fa-balance-scale" style="font-size: 2rem; color: #f57c00;"></i>
+                <h3 style="margin: 0.5rem 0; color: #f57c00;">{balance_score:.0f}%</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #555;">균형 지수</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # 추가 인사이트
+        st.markdown("---")
+        
+        # 주요 발견사항
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            top_pros_keywords = extract_keywords(final_state["pros"]).most_common(3)
+            st.markdown(f"""
+            <div style="background: rgba(40, 167, 69, 0.1); padding: 1.5rem; border-radius: 15px; 
+                        border-left: 4px solid #28a745;">
+                <h5 style="color: #28a745; margin-bottom: 1rem;">
+                    <i class="fas fa-star"></i> 핵심 강점
+                </h5>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+            """, unsafe_allow_html=True)
             
-            # 트렌드 인사이트
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.markdown("""
-                <div style="background: #e3f2fd; padding: 1rem; border-radius: 10px; text-align: center;">
-                    <i class="fas fa-chart-line" style="font-size: 2rem; color: #1976d2;"></i>
-                    <h5 style="margin: 0.5rem 0;">리뷰 추이</h5>
-                    <p style="margin: 0; font-size: 0.9rem;">최근 6개월간 리뷰 동향</p>
-                </div>
-                """, unsafe_allow_html=True)
+            for keyword, count in top_pros_keywords:
+                st.markdown(f"<li><strong>{keyword}</strong> - {count}회 언급</li>", unsafe_allow_html=True)
             
-            with col2:
-                st.markdown("""
-                <div style="background: #f3e5f5; padding: 1rem; border-radius: 10px; text-align: center;">
-                    <i class="fas fa-fire" style="font-size: 2rem; color: #7b1fa2;"></i>
-                    <h5 style="margin: 0.5rem 0;">인기도 변화</h5>
-                    <p style="margin: 0; font-size: 0.9rem;">제품 관심도 추이 분석</p>
-                </div>
-                """, unsafe_allow_html=True)
+            st.markdown("</ul></div>", unsafe_allow_html=True)
+        
+        with col2:
+            top_cons_keywords = extract_keywords(final_state["cons"]).most_common(3)
+            st.markdown(f"""
+            <div style="background: rgba(220, 53, 69, 0.1); padding: 1.5rem; border-radius: 15px; 
+                        border-left: 4px solid #dc3545;">
+                <h5 style="color: #dc3545; margin-bottom: 1rem;">
+                    <i class="fas fa-exclamation-triangle"></i> 주요 개선점
+                </h5>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+            """, unsafe_allow_html=True)
             
-            with col3:
-                st.markdown("""
-                <div style="background: #e8f5e9; padding: 1rem; border-radius: 10px; text-align: center;">
-                    <i class="fas fa-calendar-check" style="font-size: 2rem; color: #388e3c;"></i>
-                    <h5 style="margin: 0.5rem 0;">최신성</h5>
-                    <p style="margin: 0; font-size: 0.9rem;">최신 리뷰 기반 분석</p>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.info("시간별 트렌드 데이터가 충분하지 않습니다.")
+            for keyword, count in top_cons_keywords:
+                st.markdown(f"<li><strong>{keyword}</strong> - {count}회 언급</li>", unsafe_allow_html=True)
+            
+            st.markdown("</ul></div>", unsafe_allow_html=True)
         
         # 출처 (웹 크롤링인 경우)
         if final_state["sources"]:
