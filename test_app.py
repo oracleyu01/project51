@@ -79,6 +79,10 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY",
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID") or st.secrets.get("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET") or st.secrets.get("NAVER_CLIENT_SECRET", "")
 
+# 쿠팡 파트너스 설정
+COUPANG_PARTNER_ID = os.getenv("COUPANG_PARTNER_ID") or st.secrets.get("COUPANG_PARTNER_ID", "")
+COUPANG_ACCESS_KEY = os.getenv("COUPANG_ACCESS_KEY") or st.secrets.get("COUPANG_ACCESS_KEY", "")
+
 # LangSmith 설정 (선택적)
 LANGSMITH_API_KEY = os.getenv("LANGSMITH_API_KEY") or st.secrets.get("LANGSMITH_API_KEY", "")
 if LANGSMITH_API_KEY:
@@ -988,7 +992,31 @@ def create_comparison_chart(pros, cons):
     
     return fig
 
-def create_summary_metrics(pros, cons):
+def generate_coupang_search_link(product_name):
+    """쿠팡 검색 링크 생성 (API 키 없이)"""
+    import urllib.parse
+    
+    # 검색어 URL 인코딩
+    encoded_keyword = urllib.parse.quote(product_name)
+    
+    # 쿠팡 검색 링크 생성
+    coupang_search_link = f"https://www.coupang.com/np/search?q={encoded_keyword}"
+    
+    return coupang_search_link
+
+def get_sample_coupang_product(product_name):
+    """쿠팡 상품 정보 샘플 생성 (승인용)"""
+    # 승인을 위한 샘플 상품 정보
+    sample_product = {
+        "productName": f"{product_name}",
+        "productPrice": "최저가 확인",
+        "productImage": "https://via.placeholder.com/200x200/ff6b35/ffffff?text=COUPANG",
+        "isRocket": True,
+        "productUrl": generate_coupang_search_link(product_name),
+        "vendorName": "쿠팡",
+        "description": f"{product_name}의 다양한 옵션을 쿠팡에서 확인해보세요!"
+    }
+    return sample_product
     """요약 메트릭 시각화"""
     # 텍스트 통계
     total_reviews = len(pros) + len(cons)
@@ -1753,121 +1781,115 @@ if search_button:
         st.markdown("""
         <div style="text-align: center; margin: 2rem 0;">
             <h4 style="color: #667eea; margin-bottom: 1rem;">
-                <i class="fas fa-shopping-cart"></i> 위의 장점과 주요 개선점을 고려해서 추천해주는 상품은 다음과 같습니다
+                <i class="fas fa-shopping-cart"></i> 개선점은 있지만 핵심 강점을 고려해서 추천해주는 상품은 다음과 같습니다
             </h4>
         </div>
         """, unsafe_allow_html=True)
         
-        # 네이버 쇼핑에서 관련 상품 검색
-        if NAVER_CLIENT_ID and NAVER_CLIENT_SECRET:
-            try:
-                # 네이버 쇼핑 API 호출
-                shopping_url = "https://openapi.naver.com/v1/search/shop"
-                shopping_params = {
-                    "query": final_state["product_name"],
-                    "display": 1,
-                    "sort": "sim"
-                }
-                
-                shopping_headers = {
-                    "X-Naver-Client-Id": NAVER_CLIENT_ID,
-                    "X-Naver-Client-Secret": NAVER_CLIENT_SECRET
-                }
-                
-                shopping_response = requests.get(shopping_url, headers=shopping_headers, params=shopping_params)
-                
-                if shopping_response.status_code == 200:
-                    shopping_result = shopping_response.json()
-                    
-                    if shopping_result.get('items'):
-                        item = shopping_result['items'][0]
-                        
-                        # HTML 태그 제거
-                        clean_title = BeautifulSoup(item['title'], "html.parser").get_text()
-                        clean_title = re.sub(r'<[^>]+>', '', clean_title)
-                        
-                        # 가격 포맷팅
-                        price = item.get('lprice', '0')
-                        if price and price != '0':
-                            formatted_price = f"{int(price):,}원"
-                        else:
-                            formatted_price = "가격 정보 없음"
-                        
-                        # 상품 카드 표시
-                        col1, col2, col3 = st.columns([1, 2, 1])
-                        with col2:
-                            st.markdown(f"""
-                            <div style="background: white; border-radius: 20px; padding: 2rem; 
-                                        box-shadow: 0 8px 25px rgba(0,0,0,0.1); text-align: center;
-                                        border: 2px solid #667eea;">
-                                <div style="margin-bottom: 1.5rem;">
-                                    <img src="{item['image']}" 
-                                         style="width: 200px; height: 200px; object-fit: cover; 
-                                                border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                                </div>
-                                <h5 style="color: #333; margin-bottom: 1rem; line-height: 1.4;">
-                                    {clean_title[:50]}{'...' if len(clean_title) > 50 else ''}
-                                </h5>
-                                <div style="margin-bottom: 1.5rem;">
-                                    <span style="font-size: 1.5rem; font-weight: bold; color: #e74c3c;">
-                                        {formatted_price}
-                                    </span>
-                                </div>
-                                <a href="{item['link']}" target="_blank" 
-                                   style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                                          color: white; padding: 12px 30px; border-radius: 25px; 
-                                          text-decoration: none; font-weight: 600; font-size: 1.1rem;
-                                          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-                                          transition: all 0.3s ease;">
-                                    <i class="fas fa-external-link-alt"></i> 네이버 쇼핑에서 보기
-                                </a>
-                                <div style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
-                                    <i class="fas fa-store"></i> {item.get('mallName', '온라인 쇼핑몰')}
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                    else:
-                        st.info("🔍 관련 상품을 찾을 수 없습니다.")
-                else:
-                    st.warning("⚠️ 상품 검색 중 오류가 발생했습니다.")
-                    
-            except Exception as e:
-                st.error(f"❌ 상품 검색 오류: {str(e)}")
-        else:
-            # API 키가 없을 때 샘플 상품 표시
+        # 쿠팡 상품 추천 (승인용)
+        try:
+            # 쿠팡 검색 링크 생성 (API 키 없이)
+            coupang_link = generate_coupang_search_link(final_state["product_name"])
+            
+            # 샘플 상품 정보 생성
+            product = get_sample_coupang_product(final_state["product_name"])
+            
+            # 상품 카드 표시
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 st.markdown(f"""
                 <div style="background: white; border-radius: 20px; padding: 2rem; 
                             box-shadow: 0 8px 25px rgba(0,0,0,0.1); text-align: center;
-                            border: 2px solid #667eea;">
+                            border: 2px solid #ff6b35;">
                     <div style="margin-bottom: 1.5rem;">
-                        <div style="width: 200px; height: 200px; background: #f8f9fa; 
+                        <div style="width: 200px; height: 200px; background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); 
                                     border-radius: 15px; display: flex; align-items: center; 
-                                    justify-content: center; margin: 0 auto; color: #6c757d;">
-                            <i class="fas fa-image" style="font-size: 3rem;"></i>
+                                    justify-content: center; margin: 0 auto; color: white;
+                                    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);">
+                            <div style="text-align: center;">
+                                <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 0.5rem;"></i>
+                                <div style="font-size: 1.2rem; font-weight: bold;">COUPANG</div>
+                            </div>
                         </div>
                     </div>
                     <h5 style="color: #333; margin-bottom: 1rem; line-height: 1.4;">
-                        {final_state["product_name"]} - 추천 제품
+                        {product['productName']}
                     </h5>
-                    <div style="margin-bottom: 1.5rem;">
-                        <span style="font-size: 1.5rem; font-weight: bold; color: #e74c3c;">
-                            가격 정보 준비 중
+                    <div style="margin-bottom: 1rem;">
+                        <span style="font-size: 1.3rem; font-weight: bold; color: #ff6b35;">
+                            쿠팡에서 {product['productPrice']} 확인하기
                         </span>
+                        <div style="margin-top: 0.5rem;">
+                            <span style="background: #ff6b35; color: white; padding: 0.2rem 0.5rem; 
+                                         border-radius: 12px; font-size: 0.8rem; font-weight: bold;">
+                                🚀 로켓배송 가능
+                            </span>
+                        </div>
                     </div>
-                    <div style="background: #f8f9fa; color: #6c757d; padding: 12px 30px; 
-                                border-radius: 25px; font-weight: 600; font-size: 1.1rem;">
-                        <i class="fas fa-key"></i> API 키 설정 필요
+                    <a href="{coupang_link}" target="_blank" 
+                       style="display: inline-block; background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); 
+                              color: white; padding: 12px 30px; border-radius: 25px; 
+                              text-decoration: none; font-weight: 600; font-size: 1.1rem;
+                              box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+                              transition: all 0.3s ease;">
+                        <i class="fas fa-external-link-alt"></i> 쿠팡에서 최저가 확인하기
+                    </a>
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #fff5f2; 
+                                border-radius: 10px; border-left: 4px solid #ff6b35;">
+                        <div style="font-size: 0.9rem; color: #666; line-height: 1.4;">
+                            <i class="fas fa-store"></i> <strong>쿠팡</strong> - 믿고 사는 즐거움<br>
+                            <i class="fas fa-truck"></i> 전국 당일/다음날 배송<br>
+                            <i class="fas fa-shield-alt"></i> 100% 정품보장<br>
+                            <i class="fas fa-star"></i> 실시간 리뷰 & 평점 확인
+                        </div>
                     </div>
-                    <div style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
-                        <i class="fas fa-info-circle"></i> 네이버 API 설정 후 실제 상품이 표시됩니다
+                    <div style="margin-top: 1rem; padding: 0.8rem; background: #f8f9fa; 
+                                border-radius: 8px; font-size: 0.85rem; color: #666;">
+                        <i class="fas fa-info-circle"></i> 
+                        AI가 분석한 <strong>핵심 강점</strong>을 고려하여 쿠팡에서 최적의 상품을 찾아보세요!
+                    </div>
+                    <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #999;">
+                        * 이 사이트는 쿠팡 파트너스 승인을 위해 제작되었습니다.
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+                
+        except Exception as e:
+            # 오류 발생 시에도 쿠팡 링크 제공
+            coupang_link = generate_coupang_search_link(final_state["product_name"])
+            
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.markdown(f"""
+                <div style="background: white; border-radius: 20px; padding: 2rem; 
+                            box-shadow: 0 8px 25px rgba(0,0,0,0.1); text-align: center;
+                            border: 2px solid #ff6b35;">
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="width: 200px; height: 200px; background: #fff5f2; 
+                                    border-radius: 15px; display: flex; align-items: center; 
+                                    justify-content: center; margin: 0 auto; color: #ff6b35;">
+                            <i class="fas fa-search" style="font-size: 3rem;"></i>
+                        </div>
+                    </div>
+                    <h5 style="color: #333; margin-bottom: 1rem; line-height: 1.4;">
+                        "{final_state["product_name"]}" 쿠팡 검색
+                    </h5>
+                    <div style="margin-bottom: 1.5rem;">
+                        <span style="font-size: 1.2rem; color: #666;">
+                            쿠팡에서 최저가를 확인해보세요!
+                        </span>
+                    </div>
+                    <a href="{coupang_link}" target="_blank" 
+                       style="display: inline-block; background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); 
+                              color: white; padding: 12px 30px; border-radius: 25px; 
+                              text-decoration: none; font-weight: 600; font-size: 1.1rem;
+                              box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);">
+                        <i class="fas fa-external-link-alt"></i> 쿠팡에서 검색하기
+                    </a>
+                </div>
+                """, unsafe_allow_html=True)
         
-        # 출처 (웹 크롤링인 경우)
-        if final_state["sources"]:
+                if final_state["sources"]:
             with st.expander("📚 출처 보기"):
                 for idx, source in enumerate(final_state["sources"], 1):
                     st.markdown(f"""
@@ -1878,48 +1900,6 @@ if search_button:
                         </a>
                     </div>
                     """, unsafe_allow_html=True)
-        
-        # 통계 카드
-        st.markdown("---")
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.markdown("""
-            <div class="metric-card">
-                <i class="fas fa-thumbs-up" style="font-size: 2rem; color: #28a745;"></i>
-                <h3 style="margin: 0.5rem 0;">{}</h3>
-                <p style="margin: 0; opacity: 0.7;">총 장점</p>
-            </div>
-            """.format(len(final_state['pros'])), unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown("""
-            <div class="metric-card">
-                <i class="fas fa-thumbs-down" style="font-size: 2rem; color: #dc3545;"></i>
-                <h3 style="margin: 0.5rem 0;">{}</h3>
-                <p style="margin: 0; opacity: 0.7;">총 단점</p>
-            </div>
-            """.format(len(final_state['cons'])), unsafe_allow_html=True)
-        
-        with col3:
-            icon = "fa-database" if final_state["search_method"] == "database" else "fa-globe"
-            st.markdown("""
-            <div class="metric-card">
-                <i class="fas {}" style="font-size: 2rem; color: #2196f3;"></i>
-                <h3 style="margin: 0.5rem 0;">{}</h3>
-                <p style="margin: 0; opacity: 0.7;">검색 방법</p>
-            </div>
-            """.format(icon, "DB" if final_state["search_method"] == "database" else "웹"), unsafe_allow_html=True)
-        
-        with col4:
-            total_score = len(final_state['pros']) / (len(final_state['pros']) + len(final_state['cons'])) * 100 if (len(final_state['pros']) + len(final_state['cons'])) > 0 else 0
-            st.markdown("""
-            <div class="metric-card">
-                <i class="fas fa-star" style="font-size: 2rem; color: #ffc107;"></i>
-                <h3 style="margin: 0.5rem 0;">{:.0f}%</h3>
-                <p style="margin: 0; opacity: 0.7;">긍정 비율</p>
-            </div>
-            """.format(total_score), unsafe_allow_html=True)
         
         # 공유 버튼
         st.markdown("---")
