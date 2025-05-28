@@ -1650,55 +1650,6 @@ if search_button:
             else:
                 st.info("분석할 데이터가 부족합니다.")
         
-        # 요약 통계
-        metrics = create_summary_metrics(final_state["pros"], final_state["cons"])
-        
-        st.markdown("---")
-        st.markdown("### 📈 분석 인사이트")
-        
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); 
-                        padding: 1.5rem; border-radius: 15px; text-align: center; height: 120px;">
-                <i class="fas fa-comments" style="font-size: 2rem; color: #1976d2;"></i>
-                <h3 style="margin: 0.5rem 0; color: #1976d2;">{metrics['total_reviews']}</h3>
-                <p style="margin: 0; font-size: 0.9rem; color: #555;">전체 리뷰 수</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); 
-                        padding: 1.5rem; border-radius: 15px; text-align: center; height: 120px;">
-                <i class="fas fa-percentage" style="font-size: 2rem; color: #388e3c;"></i>
-                <h3 style="margin: 0.5rem 0; color: #388e3c;">{metrics['positive_ratio']:.0f}%</h3>
-                <p style="margin: 0; font-size: 0.9rem; color: #555;">긍정 비율</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); 
-                        padding: 1.5rem; border-radius: 15px; text-align: center; height: 120px;">
-                <i class="fas fa-lightbulb" style="font-size: 2rem; color: #7b1fa2;"></i>
-                <h3 style="margin: 0.5rem 0; color: #7b1fa2;">{metrics['diversity_score']}</h3>
-                <p style="margin: 0; font-size: 0.9rem; color: #555;">키워드 다양성</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col4:
-            balance_score = 100 - abs(len(final_state['pros']) - len(final_state['cons'])) / max(len(final_state['pros']), len(final_state['cons']), 1) * 100
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); 
-                        padding: 1.5rem; border-radius: 15px; text-align: center; height: 120px;">
-                <i class="fas fa-balance-scale" style="font-size: 2rem; color: #f57c00;"></i>
-                <h3 style="margin: 0.5rem 0; color: #f57c00;">{balance_score:.0f}%</h3>
-                <p style="margin: 0; font-size: 0.9rem; color: #555;">균형 지수</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
         # 추가 인사이트
         st.markdown("---")
         
@@ -1796,6 +1747,124 @@ if search_button:
                     st.markdown(f"<li>{con}</li>", unsafe_allow_html=True)
             
             st.markdown("</ul></div>", unsafe_allow_html=True)
+        
+        # 추천 상품 섹션 추가
+        st.markdown("---")
+        st.markdown("""
+        <div style="text-align: center; margin: 2rem 0;">
+            <h4 style="color: #667eea; margin-bottom: 1rem;">
+                <i class="fas fa-shopping-cart"></i> 위의 장점과 주요 개선점을 고려해서 추천해주는 상품은 다음과 같습니다
+            </h4>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 네이버 쇼핑에서 관련 상품 검색
+        if NAVER_CLIENT_ID and NAVER_CLIENT_SECRET:
+            try:
+                # 네이버 쇼핑 API 호출
+                shopping_url = "https://openapi.naver.com/v1/search/shop"
+                shopping_params = {
+                    "query": final_state["product_name"],
+                    "display": 1,
+                    "sort": "sim"
+                }
+                
+                shopping_headers = {
+                    "X-Naver-Client-Id": NAVER_CLIENT_ID,
+                    "X-Naver-Client-Secret": NAVER_CLIENT_SECRET
+                }
+                
+                shopping_response = requests.get(shopping_url, headers=shopping_headers, params=shopping_params)
+                
+                if shopping_response.status_code == 200:
+                    shopping_result = shopping_response.json()
+                    
+                    if shopping_result.get('items'):
+                        item = shopping_result['items'][0]
+                        
+                        # HTML 태그 제거
+                        clean_title = BeautifulSoup(item['title'], "html.parser").get_text()
+                        clean_title = re.sub(r'<[^>]+>', '', clean_title)
+                        
+                        # 가격 포맷팅
+                        price = item.get('lprice', '0')
+                        if price and price != '0':
+                            formatted_price = f"{int(price):,}원"
+                        else:
+                            formatted_price = "가격 정보 없음"
+                        
+                        # 상품 카드 표시
+                        col1, col2, col3 = st.columns([1, 2, 1])
+                        with col2:
+                            st.markdown(f"""
+                            <div style="background: white; border-radius: 20px; padding: 2rem; 
+                                        box-shadow: 0 8px 25px rgba(0,0,0,0.1); text-align: center;
+                                        border: 2px solid #667eea;">
+                                <div style="margin-bottom: 1.5rem;">
+                                    <img src="{item['image']}" 
+                                         style="width: 200px; height: 200px; object-fit: cover; 
+                                                border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                                </div>
+                                <h5 style="color: #333; margin-bottom: 1rem; line-height: 1.4;">
+                                    {clean_title[:50]}{'...' if len(clean_title) > 50 else ''}
+                                </h5>
+                                <div style="margin-bottom: 1.5rem;">
+                                    <span style="font-size: 1.5rem; font-weight: bold; color: #e74c3c;">
+                                        {formatted_price}
+                                    </span>
+                                </div>
+                                <a href="{item['link']}" target="_blank" 
+                                   style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                          color: white; padding: 12px 30px; border-radius: 25px; 
+                                          text-decoration: none; font-weight: 600; font-size: 1.1rem;
+                                          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                                          transition: all 0.3s ease;">
+                                    <i class="fas fa-external-link-alt"></i> 네이버 쇼핑에서 보기
+                                </a>
+                                <div style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                                    <i class="fas fa-store"></i> {item.get('mallName', '온라인 쇼핑몰')}
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.info("🔍 관련 상품을 찾을 수 없습니다.")
+                else:
+                    st.warning("⚠️ 상품 검색 중 오류가 발생했습니다.")
+                    
+            except Exception as e:
+                st.error(f"❌ 상품 검색 오류: {str(e)}")
+        else:
+            # API 키가 없을 때 샘플 상품 표시
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.markdown(f"""
+                <div style="background: white; border-radius: 20px; padding: 2rem; 
+                            box-shadow: 0 8px 25px rgba(0,0,0,0.1); text-align: center;
+                            border: 2px solid #667eea;">
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="width: 200px; height: 200px; background: #f8f9fa; 
+                                    border-radius: 15px; display: flex; align-items: center; 
+                                    justify-content: center; margin: 0 auto; color: #6c757d;">
+                            <i class="fas fa-image" style="font-size: 3rem;"></i>
+                        </div>
+                    </div>
+                    <h5 style="color: #333; margin-bottom: 1rem; line-height: 1.4;">
+                        {final_state["product_name"]} - 추천 제품
+                    </h5>
+                    <div style="margin-bottom: 1.5rem;">
+                        <span style="font-size: 1.5rem; font-weight: bold; color: #e74c3c;">
+                            가격 정보 준비 중
+                        </span>
+                    </div>
+                    <div style="background: #f8f9fa; color: #6c757d; padding: 12px 30px; 
+                                border-radius: 25px; font-weight: 600; font-size: 1.1rem;">
+                        <i class="fas fa-key"></i> API 키 설정 필요
+                    </div>
+                    <div style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                        <i class="fas fa-info-circle"></i> 네이버 API 설정 후 실제 상품이 표시됩니다
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
         
         # 출처 (웹 크롤링인 경우)
         if final_state["sources"]:
