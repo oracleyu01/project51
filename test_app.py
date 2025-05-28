@@ -974,15 +974,16 @@ def create_comparison_chart(pros, cons):
         showlegend=True,
         title={
             'text': '🎯 카테고리별 장단점 분포',
-            'font': {'size': 20, 'color': text_color},
+            'font': {'size': 22, 'color': text_color},
             'x': 0.5,
             'xanchor': 'center'
         },
-        height=400,
-        margin=dict(l=80, r=80, t=80, b=80),
+        height=500,
+        width=500,
+        margin=dict(l=60, r=60, t=100, b=60),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        legend=dict(x=0.85, y=0.95)
+        legend=dict(x=0.85, y=0.95, font=dict(size=14))
     )
     
     return fig
