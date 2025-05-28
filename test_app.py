@@ -1889,7 +1889,8 @@ if search_button:
                 </div>
                 """, unsafe_allow_html=True)
         
-                if final_state["sources"]:
+                # 출처 (웹 크롤링인 경우)
+        if final_state["sources"]:
             with st.expander("📚 출처 보기"):
                 for idx, source in enumerate(final_state["sources"], 1):
                     st.markdown(f"""
