@@ -1,12 +1,45 @@
-
 """
 스마트한 쇼핑 앱 - LangGraph 버전 (수정판)
 """
-# 앱 시작 시 폰트 자동 다운로드
-import os
-import urllib.request
+
 import streamlit as st
 
+# 페이지 설정 (반드시 첫 번째로 실행)
+st.set_page_config(
+    page_title="스마트한 쇼핑 (LangGraph)",
+    page_icon="🛒",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# 필요한 라이브러리 import
+import pandas as pd
+from supabase import create_client
+from openai import OpenAI
+import os
+from dotenv import load_dotenv
+from datetime import datetime
+import time
+import json
+import re
+import requests
+from bs4 import BeautifulSoup
+import numpy as np
+import plotly.graph_objects as go
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+from collections import Counter
+import io
+import base64
+import urllib.request
+
+# LangGraph 관련
+from typing import TypedDict, Annotated, List, Union, Dict
+from langgraph.graph import StateGraph, END
+from langchain_core.messages import HumanMessage, AIMessage
+import operator
+
+# 앱 시작 시 폰트 자동 다운로드
 @st.cache_resource
 def ensure_font():
     """폰트 파일 확인 및 다운로드"""
@@ -33,42 +66,8 @@ def ensure_font():
     
     return font_path
 
-# 앱 시작 시 폰트 확인
+# 폰트 확인 (페이지 설정 후 실행)
 font_path = ensure_font()
-
-import streamlit as st
-import pandas as pd
-from supabase import create_client
-from openai import OpenAI
-import os
-from dotenv import load_dotenv
-from datetime import datetime
-import time
-import json
-import re
-import requests
-from bs4 import BeautifulSoup
-import numpy as np
-import plotly.graph_objects as go
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
-from collections import Counter
-import io
-import base64
-
-# LangGraph 관련
-from typing import TypedDict, Annotated, List, Union, Dict
-from langgraph.graph import StateGraph, END
-from langchain_core.messages import HumanMessage, AIMessage
-import operator
-
-# 페이지 설정
-st.set_page_config(
-    page_title="스마트한 쇼핑 (LangGraph)",
-    page_icon="🛒",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # 환경 변수 로드
 load_dotenv()
