@@ -457,11 +457,11 @@ class ProConsLaptopCrawler:
                 model="gpt-3.5-turbo",
                 messages=[
                     {
-                        "role": "system",  
+                        "role": "system", 
                         "content": "당신은 제품 리뷰 분석 전문가입니다. 실제 사용 경험에 기반한 장단점만 추출합니다."
                     },
                     {
-                        "role": "user",  
+                        "role": "user", 
                         "content": prompt
                     }
                 ],
@@ -547,34 +547,25 @@ def show_loading_animation():
     return loading_placeholder
 
 def create_pros_cons_chart(pros_count, cons_count):
-    """장단점 차트 생성 (비율 기반)"""
-    total_count = pros_count + cons_count
-    
-    if total_count == 0:
-        pros_percentage = 0
-        cons_percentage = 0
-    else:
-        pros_percentage = (pros_count / total_count) * 100
-        cons_percentage = (cons_count / total_count) * 100
-
+    """장단점 차트 생성"""
     fig = go.Figure(data=[
         go.Bar(
             name='장점',
             x=['분석 결과'],
-            y=[pros_percentage],
+            y=[pros_count],
             marker_color='#28a745',
-            text=f'{pros_percentage:.1f}%', # 소수점 첫째 자리까지 표시
+            text=f'{pros_count}개',
             textposition='auto',
-            hovertemplate='장점: %{y:.1f}%<extra></extra>'
+            hovertemplate='장점: %{y}개<extra></extra>'
         ),
         go.Bar(
             name='단점',
             x=['분석 결과'],
-            y=[cons_percentage],
+            y=[cons_count],
             marker_color='#dc3545',
-            text=f'{cons_percentage:.1f}%', # 소수점 첫째 자리까지 표시
+            text=f'{cons_count}개',
             textposition='auto',
-            hovertemplate='단점: %{y:.1f}%<extra></extra>'
+            hovertemplate='단점: %{y}개<extra></extra>'
         )
     ])
     
@@ -588,7 +579,7 @@ def create_pros_cons_chart(pros_count, cons_count):
         showlegend=True,
         legend=dict(x=0.3, y=1.1, orientation='h'),
         xaxis=dict(showgrid=False, showticklabels=False),
-        yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.1)', range=[0, 100], title='비율 (%)'), # y축 범위 0-100%
+        yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.1)'),
         bargap=0.3
     )
     
@@ -1019,15 +1010,15 @@ if search_button and product_name:
             st.markdown(f"""
             <div style="text-align: center;">
                 <a href="https://twitter.com/intent/tweet?text={share_text}" target="_blank" 
-                    style="margin: 0 10px; color: #1DA1F2;">
+                   style="margin: 0 10px; color: #1DA1F2;">
                     <i class="fab fa-twitter" style="font-size: 1.5rem;"></i>
                 </a>
                 <a href="https://www.facebook.com/sharer/sharer.php?u=#" target="_blank" 
-                    style="margin: 0 10px; color: #4267B2;">
+                   style="margin: 0 10px; color: #4267B2;">
                     <i class="fab fa-facebook" style="font-size: 1.5rem;"></i>
                 </a>
                 <button onclick="navigator.clipboard.writeText('{share_text}')" 
-                            style="margin: 0 10px; background: none; border: none; cursor: pointer;">
+                        style="margin: 0 10px; background: none; border: none; cursor: pointer;">
                     <i class="fas fa-link" style="font-size: 1.5rem; color: #666;"></i>
                 </button>
             </div>
