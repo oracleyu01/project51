@@ -957,11 +957,17 @@ def create_comparison_chart(pros, cons):
         hovertemplate='%{theta}<br>단점: %{r}개<extra></extra>'
     ))
     
+    # 최대값 계산
+    max_value = max(
+        max(category_pros.values()) if category_pros else 1,
+        max(category_cons.values()) if category_cons else 1
+    )
+    
     fig.update_layout(
         polar=dict(
             radialaxis=dict(
                 visible=True,
-                range=[0, max(max(category_pros.values()), max(category_cons.values())) + 1]
+                range=[0, max_value + 1]
             ),
             bgcolor='rgba(0,0,0,0)'
         ),
@@ -986,13 +992,16 @@ def create_keyword_ranking(pros, cons):
     # 전체 키워드 추출
     all_keywords = extract_keywords(pros + cons)
     
-    if not all_keywords:
+    if not all_keywords or not isinstance(all_keywords, dict):
         return None
     
-    # 상위 10개 키워드
-    top_keywords = all_keywords.most_common(10)
-    words = [item[0] for item in top_keywords]
-    counts = [item[1] for item in top_keywords]
+    # 상위 10개 키워드 (dict이므로 정렬 필요)
+    sorted_keywords = sorted(all_keywords.items(), key=lambda x: x[1], reverse=True)[:10]
+    if not sorted_keywords:
+        return None
+    
+    words = [item[0] for item in sorted_keywords]
+    counts = [item[1] for item in sorted_keywords]
     
     # 각 키워드가 장점/단점 중 어디에 더 많이 나타나는지 확인
     pros_text = ' '.join(pros)
