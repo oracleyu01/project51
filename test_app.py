@@ -987,75 +987,6 @@ def create_comparison_chart(pros, cons):
     
     return fig
 
-def create_keyword_ranking(pros, cons):
-    """상위 키워드 랭킹 차트"""
-    # 전체 키워드 추출
-    all_keywords = extract_keywords(pros + cons)
-    
-    if not all_keywords or not isinstance(all_keywords, dict):
-        return None
-    
-    # 상위 10개 키워드 (dict이므로 정렬 필요)
-    sorted_keywords = sorted(all_keywords.items(), key=lambda x: x[1], reverse=True)[:10]
-    if not sorted_keywords:
-        return None
-    
-    words = [item[0] for item in sorted_keywords]
-    counts = [item[1] for item in sorted_keywords]
-    
-    # 각 키워드가 장점/단점 중 어디에 더 많이 나타나는지 확인
-    pros_text = ' '.join(pros)
-    cons_text = ' '.join(cons)
-    
-    colors = []
-    for word in words:
-        pros_count = pros_text.count(word)
-        cons_count = cons_text.count(word)
-        if pros_count > cons_count:
-            colors.append('#28a745')
-        elif cons_count > pros_count:
-            colors.append('#dc3545')
-        else:
-            colors.append('#6c757d')
-    
-    # 수평 막대 차트
-    fig = go.Figure(go.Bar(
-        y=words[::-1],  # 역순으로 표시 (상위가 위로)
-        x=counts[::-1],
-        orientation='h',
-        marker=dict(
-            color=colors[::-1],
-            line=dict(color='rgba(0,0,0,0.2)', width=1)
-        ),
-        text=[f'{count}회' for count in counts[::-1]],
-        textposition='auto',
-        hovertemplate='%{y}<br>언급 횟수: %{x}회<extra></extra>'
-    ))
-    
-    fig.update_layout(
-        title={
-            'text': '🏆 TOP 10 키워드 랭킹',
-            'font': {'size': 20, 'color': text_color},
-            'x': 0.5,
-            'xanchor': 'center'
-        },
-        xaxis_title='언급 횟수',
-        yaxis_title='',
-        height=400,
-        margin=dict(l=100, r=20, t=80, b=40),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(
-            showgrid=True,
-            gridcolor='rgba(0,0,0,0.1)'
-        ),
-        yaxis=dict(
-            showgrid=False
-        )
-    )
-    
-    return fig
-
 def create_summary_metrics(pros, cons):
     """요약 메트릭 시각화"""
     # 텍스트 통계
@@ -1589,12 +1520,12 @@ if search_button:
         st.markdown("### 🔤 키워드 분석")
         display_wordclouds(final_state["pros"], final_state["cons"])
         
-        # 시간별 트렌드 차트 대신 다른 시각화
+        # 심층 분석 섹션 - 수정된 부분
         st.markdown("---")
         st.markdown("### 📊 심층 분석")
         
-        # 카테고리별 장단점 분포 (레이더 차트)
-        col1, col2 = st.columns(2)
+        # 카테고리별 장단점 분포 (레이더 차트)와 해석
+        col1, col2 = st.columns([1, 1])
         
         with col1:
             comparison_chart = create_comparison_chart(final_state["pros"], final_state["cons"])
@@ -1604,12 +1535,164 @@ if search_button:
                 st.info("카테고리별 분석을 위한 데이터가 부족합니다.")
         
         with col2:
-            # 키워드 랭킹 차트
-            ranking_chart = create_keyword_ranking(final_state["pros"], final_state["cons"])
-            if ranking_chart:
-                st.plotly_chart(ranking_chart, use_container_width=True)
+            # 레이더 차트 해석 섹션
+            if final_state["pros"] or final_state["cons"]:
+                # 카테고리별 분석을 위한 데이터 추출
+                categories = {
+                    '성능': ['성능', '속도', '빠르', '느리', '렉', '버벅', '프로세서', 'CPU', 'GPU', '메모리'],
+                    '디자인': ['디자인', '외관', '예쁘', '이쁘', '못생', '색상', '모양', '두께', '얇'],
+                    '가격': ['가격', '비싸', '저렴', '가성비', '비용', '돈', '할인', '세일'],
+                    '품질': ['품질', '마감', '재질', '튼튼', '약하', '고장', '내구성', '견고'],
+                    '기능': ['기능', '편의', '편리', '불편', '사용', '조작', '인터페이스'],
+                    '배터리': ['배터리', '충전', '전원', '지속', '방전'],
+                    '화면': ['화면', '디스플레이', '선명', '밝기', '해상도'],
+                    '기타': []
+                }
+                
+                # 각 카테고리별 장단점 수 계산
+                category_pros = {cat: 0 for cat in categories}
+                category_cons = {cat: 0 for cat in categories}
+                
+                # 장점 분류
+                for pro in final_state["pros"]:
+                    categorized = False
+                    for cat, keywords in categories.items():
+                        if cat != '기타' and any(keyword in pro for keyword in keywords):
+                            category_pros[cat] += 1
+                            categorized = True
+                            break
+                    if not categorized:
+                        category_pros['기타'] += 1
+                
+                # 단점 분류
+                for con in final_state["cons"]:
+                    categorized = False
+                    for cat, keywords in categories.items():
+                        if cat != '기타' and any(keyword in con for keyword in keywords):
+                            category_cons[cat] += 1
+                            categorized = True
+                            break
+                    if not categorized:
+                        category_cons['기타'] += 1
+                
+                # 가장 강한 장점 카테고리
+                strongest_pro_cat = max(category_pros.items(), key=lambda x: x[1])
+                # 가장 큰 단점 카테고리  
+                strongest_con_cat = max(category_cons.items(), key=lambda x: x[1])
+                
+                # 균형잡힌 카테고리 (장단점 차이가 적은)
+                balanced_categories = []
+                for cat in categories:
+                    if category_pros[cat] > 0 and category_cons[cat] > 0:
+                        diff = abs(category_pros[cat] - category_cons[cat])
+                        if diff <= 1:
+                            balanced_categories.append(cat)
+                
+                st.markdown("""
+                <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); 
+                            padding: 2rem; border-radius: 20px; border-left: 5px solid #667eea;">
+                    <h4 style="color: #667eea; margin-bottom: 1.5rem; text-align: center;">
+                        <i class="fas fa-chart-line"></i> 카테고리별 분석 인사이트
+                    </h4>
+                """, unsafe_allow_html=True)
+                
+                # 주요 강점 분석
+                if strongest_pro_cat[1] > 0:
+                    st.markdown(f"""
+                    <div style="background: rgba(40, 167, 69, 0.1); padding: 1.2rem; 
+                                border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid #28a745;">
+                        <h5 style="color: #28a745; margin-bottom: 0.8rem;">
+                            <i class="fas fa-star"></i> 최고 강점 영역
+                        </h5>
+                        <p style="margin: 0; line-height: 1.6; color: #2d5016;">
+                            <strong>"{strongest_pro_cat[0]}"</strong> 분야에서 가장 높은 평가를 받고 있습니다. 
+                            총 <strong>{strongest_pro_cat[1]}개</strong>의 긍정적인 의견이 집중되어 있어, 
+                            이 제품의 핵심 경쟁력으로 보입니다.
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # 주요 개선점 분석
+                if strongest_con_cat[1] > 0:
+                    st.markdown(f"""
+                    <div style="background: rgba(220, 53, 69, 0.1); padding: 1.2rem; 
+                                border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid #dc3545;">
+                        <h5 style="color: #dc3545; margin-bottom: 0.8rem;">
+                            <i class="fas fa-exclamation-triangle"></i> 주요 개선 필요 영역
+                        </h5>
+                        <p style="margin: 0; line-height: 1.6; color: #721c24;">
+                            <strong>"{strongest_con_cat[0]}"</strong> 부분에서 가장 많은 불만이 제기되고 있습니다. 
+                            총 <strong>{strongest_con_cat[1]}개</strong>의 개선 요청이 있어, 
+                            구매 전 신중한 검토가 필요한 영역입니다.
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # 균형잡힌 영역 분석
+                if balanced_categories:
+                    st.markdown(f"""
+                    <div style="background: rgba(255, 193, 7, 0.1); padding: 1.2rem; 
+                                border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid #ffc107;">
+                        <h5 style="color: #d39e00; margin-bottom: 0.8rem;">
+                            <i class="fas fa-balance-scale"></i> 균형잡힌 영역
+                        </h5>
+                        <p style="margin: 0; line-height: 1.6; color: #533f03;">
+                            <strong>{', '.join(balanced_categories[:2])}</strong> 영역에서는 장단점이 고르게 나타나고 있습니다. 
+                            개인의 사용 패턴과 선호도에 따라 만족도가 달라질 수 있는 부분입니다.
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # 전체적인 평가
+                total_pros = sum(category_pros.values())
+                total_cons = sum(category_cons.values())
+                if total_pros > 0 or total_cons > 0:
+                    positive_ratio = (total_pros / (total_pros + total_cons)) * 100
+                    
+                    if positive_ratio >= 70:
+                        overall_sentiment = "매우 긍정적"
+                        sentiment_color = "#28a745"
+                        sentiment_icon = "fa-thumbs-up"
+                        recommendation = "강력 추천합니다"
+                    elif positive_ratio >= 55:
+                        overall_sentiment = "긍정적"
+                        sentiment_color = "#20c997"
+                        sentiment_icon = "fa-smile"
+                        recommendation = "추천합니다"
+                    elif positive_ratio >= 45:
+                        overall_sentiment = "중립적"
+                        sentiment_color = "#ffc107"
+                        sentiment_icon = "fa-meh"
+                        recommendation = "신중한 검토 후 구매하세요"
+                    else:
+                        overall_sentiment = "개선 필요"
+                        sentiment_color = "#dc3545"
+                        sentiment_icon = "fa-frown"
+                        recommendation = "다른 대안을 고려해보세요"
+                    
+                    st.markdown(f"""
+                    <div style="background: rgba(108, 117, 125, 0.1); padding: 1.2rem; 
+                                border-radius: 12px; text-align: center; border: 2px solid {sentiment_color};">
+                        <h5 style="color: {sentiment_color}; margin-bottom: 0.8rem;">
+                            <i class="fas {sentiment_icon}"></i> 종합 평가
+                        </h5>
+                        <p style="margin: 0; line-height: 1.6; color: #495057; font-size: 1.1rem;">
+                            전체적으로 <strong style="color: {sentiment_color};">{overall_sentiment}</strong>인 평가를 받고 있으며, 
+                            <br>구매를 고려 중이시라면 <strong>{recommendation}</strong>.
+                        </p>
+                        <div style="margin-top: 1rem; padding: 0.8rem; background: rgba(255,255,255,0.5); 
+                                    border-radius: 8px;">
+                            <span style="font-size: 0.9rem; color: #6c757d;">
+                                긍정 의견 <strong>{positive_ratio:.1f}%</strong> | 
+                                부정 의견 <strong>{100-positive_ratio:.1f}%</strong>
+                            </span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("</div>", unsafe_allow_html=True)
             else:
-                st.info("키워드 랭킹을 표시할 데이터가 부족합니다.")
+                st.info("분석할 데이터가 부족합니다.")
         
         # 요약 통계
         metrics = create_summary_metrics(final_state["pros"], final_state["cons"])
