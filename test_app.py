@@ -848,12 +848,14 @@ def display_wordclouds(pros, cons):
             
             # 주요 키워드 표시
             keywords = extract_keywords(pros)
-            if keywords:
-                st.markdown("**🔑 주요 키워드:**")
-                top_keywords = keywords.most_common(5)
-                keyword_html = " ".join([f'<span style="background: #d4f1d4; padding: 0.2rem 0.5rem; border-radius: 15px; margin: 0.2rem; display: inline-block;">{word} ({count})</span>' 
-                                        for word, count in top_keywords])
-                st.markdown(keyword_html, unsafe_allow_html=True)
+            if keywords and isinstance(keywords, dict):
+                # Counter가 아닌 dict인 경우 처리
+                sorted_keywords = sorted(keywords.items(), key=lambda x: x[1], reverse=True)[:5]
+                if sorted_keywords:
+                    st.markdown("**🔑 주요 키워드:**")
+                    keyword_html = " ".join([f'<span style="background: #d4f1d4; padding: 0.2rem 0.5rem; border-radius: 15px; margin: 0.2rem; display: inline-block;">{word} ({count})</span>' 
+                                            for word, count in sorted_keywords])
+                    st.markdown(keyword_html, unsafe_allow_html=True)
     
     with col2:
         if cons:
@@ -875,12 +877,14 @@ def display_wordclouds(pros, cons):
             
             # 주요 키워드 표시
             keywords = extract_keywords(cons)
-            if keywords:
-                st.markdown("**🔑 주요 키워드:**")
-                top_keywords = keywords.most_common(5)
-                keyword_html = " ".join([f'<span style="background: #ffd6d6; padding: 0.2rem 0.5rem; border-radius: 15px; margin: 0.2rem; display: inline-block;">{word} ({count})</span>' 
-                                        for word, count in top_keywords])
-                st.markdown(keyword_html, unsafe_allow_html=True)
+            if keywords and isinstance(keywords, dict):
+                # Counter가 아닌 dict인 경우 처리
+                sorted_keywords = sorted(keywords.items(), key=lambda x: x[1], reverse=True)[:5]
+                if sorted_keywords:
+                    st.markdown("**🔑 주요 키워드:**")
+                    keyword_html = " ".join([f'<span style="background: #ffd6d6; padding: 0.2rem 0.5rem; border-radius: 15px; margin: 0.2rem; display: inline-block;">{word} ({count})</span>' 
+                                            for word, count in sorted_keywords])
+                    st.markdown(keyword_html, unsafe_allow_html=True)
 
 def create_comparison_chart(pros, cons):
     """장단점 비교 시각화"""
@@ -1656,13 +1660,17 @@ if search_button:
         with col1:
             # 장점에서 가장 많이 언급된 구체적인 키워드 추출
             pros_keywords = extract_keywords(final_state["pros"])
-            if pros_keywords:
+            if pros_keywords and isinstance(pros_keywords, dict):
                 # 제품 특성과 관련된 키워드만 필터링
                 product_keywords = {
                     k: v for k, v in pros_keywords.items() 
                     if len(k) >= 2 and not any(skip in k for skip in ['언급', '회', '개', '점'])
                 }
-                top_pros_keywords = Counter(product_keywords).most_common(3)
+                if product_keywords:
+                    sorted_keywords = sorted(product_keywords.items(), key=lambda x: x[1], reverse=True)[:3]
+                    top_pros_keywords = sorted_keywords
+                else:
+                    top_pros_keywords = []
             else:
                 top_pros_keywords = []
             
@@ -1686,7 +1694,7 @@ if search_button:
                         highlighted = representative.replace(keyword, f"<strong>{keyword}</strong>")
                         st.markdown(f"<li>{highlighted}</li>", unsafe_allow_html=True)
                     else:
-                        st.markdown(f"<li><strong>{keyword}</strong> - {count}회 언급</li>", unsafe_allow_html=True)
+                        st.markdown(f"<li><strong>{keyword}</strong> 관련 특징</li>", unsafe_allow_html=True)
             else:
                 # 키워드가 없을 경우 원본 장점 중 짧은 것 3개 표시
                 short_pros = sorted(final_state["pros"], key=len)[:3]
@@ -1698,13 +1706,17 @@ if search_button:
         with col2:
             # 단점에서 가장 많이 언급된 구체적인 키워드 추출
             cons_keywords = extract_keywords(final_state["cons"])
-            if cons_keywords:
+            if cons_keywords and isinstance(cons_keywords, dict):
                 # 제품 특성과 관련된 키워드만 필터링
                 product_keywords = {
                     k: v for k, v in cons_keywords.items() 
                     if len(k) >= 2 and not any(skip in k for skip in ['언급', '회', '개', '점'])
                 }
-                top_cons_keywords = Counter(product_keywords).most_common(3)
+                if product_keywords:
+                    sorted_keywords = sorted(product_keywords.items(), key=lambda x: x[1], reverse=True)[:3]
+                    top_cons_keywords = sorted_keywords
+                else:
+                    top_cons_keywords = []
             else:
                 top_cons_keywords = []
             
@@ -1728,7 +1740,7 @@ if search_button:
                         highlighted = representative.replace(keyword, f"<strong>{keyword}</strong>")
                         st.markdown(f"<li>{highlighted}</li>", unsafe_allow_html=True)
                     else:
-                        st.markdown(f"<li><strong>{keyword}</strong> - {count}회 언급</li>", unsafe_allow_html=True)
+                        st.markdown(f"<li><strong>{keyword}</strong> 관련 문제</li>", unsafe_allow_html=True)
             else:
                 # 키워드가 없을 경우 원본 단점 중 짧은 것 3개 표시
                 short_cons = sorted(final_state["cons"], key=len)[:3]
