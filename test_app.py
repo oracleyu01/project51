@@ -1800,12 +1800,12 @@ if search_button:
                 st.markdown(f"""
                 <div style="background: white; border-radius: 20px; padding: 2rem; 
                             box-shadow: 0 8px 25px rgba(0,0,0,0.1); text-align: center;
-                            border: 2px solid #ff6b35;">
+                            border: 2px solid #667eea;">
                     <div style="margin-bottom: 1.5rem;">
-                        <div style="width: 200px; height: 200px; background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); 
+                        <div style="width: 200px; height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                                     border-radius: 15px; display: flex; align-items: center; 
                                     justify-content: center; margin: 0 auto; color: white;
-                                    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);">
+                                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
                             <div style="text-align: center;">
                                 <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 0.5rem;"></i>
                                 <div style="font-size: 1.2rem; font-weight: bold;">COUPANG</div>
@@ -1816,26 +1816,26 @@ if search_button:
                         {product['productName']}
                     </h5>
                     <div style="margin-bottom: 1rem;">
-                        <span style="font-size: 1.3rem; font-weight: bold; color: #ff6b35;">
+                        <span style="font-size: 1.3rem; font-weight: bold; color: #667eea;">
                             쿠팡에서 {product['productPrice']} 확인하기
                         </span>
                         <div style="margin-top: 0.5rem;">
-                            <span style="background: #ff6b35; color: white; padding: 0.2rem 0.5rem; 
+                            <span style="background: #667eea; color: white; padding: 0.2rem 0.5rem; 
                                          border-radius: 12px; font-size: 0.8rem; font-weight: bold;">
                                 🚀 로켓배송 가능
                             </span>
                         </div>
                     </div>
                     <a href="{coupang_link}" target="_blank" 
-                       style="display: inline-block; background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); 
+                       style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                               color: white; padding: 12px 30px; border-radius: 25px; 
                               text-decoration: none; font-weight: 600; font-size: 1.1rem;
-                              box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+                              box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
                               transition: all 0.3s ease;">
                         <i class="fas fa-external-link-alt"></i> 쿠팡에서 최저가 확인하기
                     </a>
-                    <div style="margin-top: 1.5rem; padding: 1rem; background: #fff5f2; 
-                                border-radius: 10px; border-left: 4px solid #ff6b35;">
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #f0f4ff; 
+                                border-radius: 10px; border-left: 4px solid #667eea;">
                         <div style="font-size: 0.9rem; color: #666; line-height: 1.4;">
                             <i class="fas fa-store"></i> <strong>쿠팡</strong> - 믿고 사는 즐거움<br>
                             <i class="fas fa-truck"></i> 전국 당일/다음날 배송<br>
@@ -1863,11 +1863,11 @@ if search_button:
                 st.markdown(f"""
                 <div style="background: white; border-radius: 20px; padding: 2rem; 
                             box-shadow: 0 8px 25px rgba(0,0,0,0.1); text-align: center;
-                            border: 2px solid #ff6b35;">
+                            border: 2px solid #667eea;">
                     <div style="margin-bottom: 1.5rem;">
-                        <div style="width: 200px; height: 200px; background: #fff5f2; 
+                        <div style="width: 200px; height: 200px; background: #f0f4ff; 
                                     border-radius: 15px; display: flex; align-items: center; 
-                                    justify-content: center; margin: 0 auto; color: #ff6b35;">
+                                    justify-content: center; margin: 0 auto; color: #667eea;">
                             <i class="fas fa-search" style="font-size: 3rem;"></i>
                         </div>
                     </div>
@@ -1880,10 +1880,10 @@ if search_button:
                         </span>
                     </div>
                     <a href="{coupang_link}" target="_blank" 
-                       style="display: inline-block; background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); 
+                       style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                               color: white; padding: 12px 30px; border-radius: 25px; 
                               text-decoration: none; font-weight: 600; font-size: 1.1rem;
-                              box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);">
+                              box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
                         <i class="fas fa-external-link-alt"></i> 쿠팡에서 검색하기
                     </a>
                 </div>
