@@ -1073,4 +1073,41 @@ if search_button and product_name:
             </div>
             """, unsafe_allow_html=True)
     else:
-        st.error(f"'{product_name}'에 대한 정보를 찾을 수
+        st.error(f"'{product_name}'에 대한 정보를 찾을 수 없습니다.")
+
+# 하단 정보
+st.markdown("---")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.markdown("""
+    <div class="metric-card">
+        <i class="fas fa-brain" style="color: #667eea;"></i>
+        <p>LangGraph로 구현된<br>체계적인 검색 프로세스</p>
+    </div>
+    """, unsafe_allow_html=True)
+with col2:
+    st.markdown("""
+    <div class="metric-card">
+        <i class="fas fa-sync-alt" style="color: #28a745;"></i>
+        <p>DB 우선 검색<br>→ 없으면 웹 크롤링</p>
+    </div>
+    """, unsafe_allow_html=True)
+with col3:
+    st.markdown("""
+    <div class="metric-card">
+        <i class="fas fa-save" style="color: #dc3545;"></i>
+        <p>검색 결과<br>자동 저장</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+current_date = datetime.now().strftime('%Y년 %m월 %d일')
+st.markdown(f"""
+<div style="text-align: center; color: #666; padding: 2rem; margin-top: 2rem;">
+    <p style="margin-bottom: 0.5rem;">
+        <i class="fas fa-clock"></i> 마지막 업데이트: {current_date}
+    </p>
+    <p style="font-size: 0.9rem; opacity: 0.8;">
+        Powered by LangGraph & OpenAI | Made with <i class="fas fa-heart" style="color: #e74c3c;"></i> by Smart Shopping Team
+    </p>
+</div>
+""", unsafe_allow_html=True)
