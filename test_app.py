@@ -1282,10 +1282,11 @@ col1, col2, col3 = st.columns([1, 3, 1])
 with col2:
     st.markdown('<div class="search-card fade-in">', unsafe_allow_html=True)
     
+    # 제목을 위에 배치
     st.markdown("""
-    <h3 style="text-align: center; color: #333; margin-bottom: 1.5rem;">
+    <h2 style="text-align: center; color: #333; margin-bottom: 2rem; font-size: 2rem;">
         <i class="fas fa-search"></i> 어떤 제품을 찾고 계신가요?
-    </h3>
+    </h2>
     """, unsafe_allow_html=True)
     
     # 북마크에서 선택된 항목이 있으면 자동 입력
@@ -1294,6 +1295,41 @@ with col2:
         default_value = st.session_state.selected_bookmark
         del st.session_state.selected_bookmark
     
+    # 검색창 스타일 추가
+    st.markdown("""
+    <style>
+        /* 검색 입력창 크기 및 스타일 개선 */
+        .stTextInput > div > div > input {
+            height: 60px !important;
+            font-size: 1.5rem !important;
+            padding: 1rem 2rem !important;
+            border-radius: 50px !important;
+            border: 3px solid #e0e0e0 !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .stTextInput > div > div > input:focus {
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15) !important;
+            transform: translateY(-2px) !important;
+        }
+        
+        /* 플레이스홀더 스타일 */
+        .stTextInput > div > div > input::placeholder {
+            color: #999 !important;
+            font-size: 1.2rem !important;
+        }
+        
+        /* 버튼 크기 조정 */
+        .search-buttons .stButton > button {
+            height: 50px !important;
+            font-size: 1.2rem !important;
+            padding: 0 2.5rem !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # 검색창을 아래에 배치
     product_name = st.text_input(
         "제품명 입력",  # label 추가
         placeholder="예: 맥북 프로 M3, LG 그램 2024, 갤럭시북4 프로",
@@ -1301,19 +1337,36 @@ with col2:
         label_visibility="collapsed"  # label은 숨기되 경고 방지
     )
     
-    col_btn1, col_btn2, col_btn3 = st.columns([2, 2, 1])
+    # 버튼들
+    st.markdown('<div class="search-buttons">', unsafe_allow_html=True)
+    col_btn1, col_btn2, col_btn3 = st.columns([2.5, 2, 0.5])
     with col_btn1:
         search_button = st.button("🔍 검색하기", use_container_width=True, type="primary")
     with col_btn2:
         show_process = st.checkbox("🔧 프로세스 보기", value=True)
     with col_btn3:
-        if product_name and st.button("📌", help="북마크에 추가"):
+        if product_name and st.button("📌", help="북마크에 추가", key="bookmark_btn"):
             if product_name not in st.session_state.bookmarks:
                 st.session_state.bookmarks.append(product_name)
                 st.success("북마크에 추가되었습니다!")
                 st.session_state.total_searches += 1
-    
     st.markdown('</div>', unsafe_allow_html=True)
+    
+    # 인기 검색어 (선택사항)
+    st.markdown("""
+    <div style="text-align: center; margin-top: 1.5rem;">
+        <p style="opacity: 0.7; font-size: 1rem; margin-bottom: 0.5rem;">인기 검색어</p>
+    """, unsafe_allow_html=True)
+    
+    popular_searches = ["맥북 프로 M3", "LG 그램 2024", "갤럭시북4 프로", "델 XPS 15"]
+    cols = st.columns(len(popular_searches))
+    for idx, (col, search) in enumerate(zip(cols, popular_searches)):
+        with col:
+            if st.button(search, key=f"popular_{idx}", use_container_width=True):
+                st.session_state.selected_bookmark = search
+                st.rerun()
+    
+    st.markdown('</div></div>', unsafe_allow_html=True)
 
 # 검색 실행
 if search_button and product_name:
