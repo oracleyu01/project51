@@ -636,69 +636,148 @@ def create_wordcloud(texts, title, color_scheme):
     if not word_freq:
         return None
     
-    # 한글 폰트 설정 (Streamlit Cloud에서 사용 가능한 폰트)
+    # matplotlib 한글 폰트 설정
+    import matplotlib as mpl
+    import matplotlib.font_manager as fm
+    
+    # 현재 설치된 폰트 목록 확인
+    font_list = fm.findSystemFonts(fontpaths=None, fontext='ttf')
+    
+    # 한글 폰트 찾기
+    korean_fonts = []
+    for font in font_list:
+        try:
+            if any(keyword in font.lower() for keyword in ['noto', 'malgun', 'nanum', 'gothic', 'gulim']):
+                korean_fonts.append(font)
+        except:
+            pass
+    
+    # 폰트 설정
     font_path = None
-    try:
-        # 시스템 폰트 경로 시도
-        import platform
-        system = platform.system()
+    if korean_fonts:
+        font_path = korean_fonts[0]
+    else:
+        # Streamlit Cloud 환경에서의 기본 폰트 경로들
+        font_paths = [
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto-cjk/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+            "/app/.fonts/NotoSansCJK-Regular.ttc",
+            "./fonts/NanumGothic.ttf"  # 프로젝트 폴더에 폰트 파일을 넣은 경우
+        ]
         
-        if system == "Darwin":  # macOS
-            font_path = "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
-        elif system == "Windows":
-            font_path = "C:/Windows/Fonts/malgun.ttf"
-        else:  # Linux/Streamlit Cloud
-            # Streamlit Cloud에서는 Noto Sans CJK 사용
-            font_paths = [
-                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-                "/usr/share/fonts/truetype/noto-cjk/NotoSansCJK-Regular.ttc",
-                "/app/.fonts/NotoSansCJK-Regular.ttc"
-            ]
-            for path in font_paths:
-                if os.path.exists(path):
-                    font_path = path
-                    break
+        for path in font_paths:
+            if os.path.exists(path):
+                font_path = path
+                break
+    
+    # matplotlib 한글 설정
+    try:
+        if font_path:
+            font_name = fm.FontProperties(fname=font_path).get_name()
+            mpl.rcParams['font.family'] = font_name
+            mpl.rcParams['axes.unicode_minus'] = False
     except:
         pass
     
-    # 워드클라우드 생성
+    # 워드클라우드 생성 시도
     plt.figure(figsize=(10, 6))
     
-    if font_path and os.path.exists(font_path):
-        wordcloud = WordCloud(
-            width=800,
-            height=400,
-            background_color='white',
-            colormap=color_scheme,
-            font_path=font_path,
-            relative_scaling=0.5,
-            min_font_size=10,
-            max_words=50
-        ).generate_from_frequencies(word_freq)
-    else:
-        # 폰트가 없는 경우 영어로 표시
-        wordcloud = WordCloud(
-            width=800,
-            height=400,
-            background_color='white',
-            colormap=color_scheme,
-            relative_scaling=0.5,
-            min_font_size=10,
-            max_words=50
-        ).generate_from_frequencies(word_freq)
+    try:
+        if font_path and os.path.exists(font_path):
+            wordcloud = WordCloud(
+                width=800,
+                height=400,
+                background_color='white',
+                colormap=color_scheme,
+                font_path=font_path,
+                relative_scaling=0.5,
+                min_font_size=10,
+                max_words=50,
+                prefer_horizontal=0.7
+            ).generate_from_frequencies(word_freq)
+        else:
+            # 폰트가 없는 경우 기본 처리
+            st.warning("한글 폰트를 찾을 수 없습니다. 영문으로 표시됩니다.")
+            # 한글을 영문으로 변환 (임시)
+            english_freq = {}
+            for i, (word, freq) in enumerate(word_freq.items()):
+                english_freq[f"keyword{i+1}"] = freq
+            
+            wordcloud = WordCloud(
+                width=800,
+                height=400,
+                background_color='white',
+                colormap=color_scheme,
+                relative_scaling=0.5,
+                min_font_size=10,
+                max_words=50
+            ).generate_from_frequencies(english_freq)
+        
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.axis('off')
+        plt.title(title, fontsize=20, pad=20, weight='bold')
+        plt.tight_layout()
+        
+        # 이미지를 bytes로 변환
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor='white')
+        buf.seek(0)
+        plt.close()
+        
+        return buf
+        
+    except Exception as e:
+        st.error(f"워드클라우드 생성 오류: {str(e)}")
+        plt.close()
+        
+        # 대체 방안: 텍스트 기반 시각화
+        return None
+
+def create_text_cloud(texts, title, color):
+    """워드클라우드 대신 텍스트 기반 시각화"""
+    if not texts:
+        return
     
-    plt.imshow(wordcloud, interpolation='bilinear')
-    plt.axis('off')
-    plt.title(title, fontsize=20, pad=20, weight='bold')
-    plt.tight_layout()
+    # 키워드 추출
+    word_freq = extract_keywords(texts)
     
-    # 이미지를 bytes로 변환
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor='white')
-    buf.seek(0)
-    plt.close()
+    if not word_freq:
+        return
     
-    return buf
+    # 상위 20개 키워드
+    top_words = word_freq.most_common(20)
+    
+    # 최대 빈도수
+    max_freq = top_words[0][1] if top_words else 1
+    
+    # HTML로 워드클라우드 스타일 표현
+    html_words = []
+    for word, freq in top_words:
+        # 빈도수에 따른 크기 계산 (1rem ~ 3rem)
+        size = 1 + (freq / max_freq) * 2
+        # 빈도수에 따른 투명도 (0.5 ~ 1.0)
+        opacity = 0.5 + (freq / max_freq) * 0.5
+        
+        html_words.append(
+            f'<span style="font-size: {size}rem; color: {color}; opacity: {opacity}; '
+            f'margin: 0.3rem; display: inline-block; font-weight: bold;">{word}</span>'
+        )
+    
+    # 랜덤하게 섞기
+    import random
+    random.shuffle(html_words)
+    
+    # HTML 출력
+    st.markdown(f"""
+    <div style="text-align: center; padding: 2rem; background: white; 
+                border-radius: 15px; border: 2px solid {color}20;">
+        <h4 style="color: {color}; margin-bottom: 1rem;">{title}</h4>
+        <div style="line-height: 2.5;">
+            {''.join(html_words)}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 def display_wordclouds(pros, cons):
     """장단점 워드클라우드 표시"""
@@ -714,12 +793,13 @@ def display_wordclouds(pros, cons):
             </div>
             """, unsafe_allow_html=True)
             
-            # 장점 워드클라우드 생성
+            # 장점 워드클라우드 생성 시도
             pros_wordcloud = create_wordcloud(pros, "", "Greens")
             if pros_wordcloud:
                 st.image(pros_wordcloud, use_column_width=True)
             else:
-                st.info("워드클라우드를 생성할 수 없습니다.")
+                # 워드클라우드 실패 시 텍스트 기반 시각화
+                create_text_cloud(pros, "장점 키워드 분석", "#28a745")
             
             # 주요 키워드 표시
             keywords = extract_keywords(pros)
@@ -740,12 +820,13 @@ def display_wordclouds(pros, cons):
             </div>
             """, unsafe_allow_html=True)
             
-            # 단점 워드클라우드 생성
+            # 단점 워드클라우드 생성 시도
             cons_wordcloud = create_wordcloud(cons, "", "Reds")
             if cons_wordcloud:
                 st.image(cons_wordcloud, use_column_width=True)
             else:
-                st.info("워드클라우드를 생성할 수 없습니다.")
+                # 워드클라우드 실패 시 텍스트 기반 시각화
+                create_text_cloud(cons, "단점 키워드 분석", "#dc3545")
             
             # 주요 키워드 표시
             keywords = extract_keywords(cons)
