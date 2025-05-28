@@ -1644,52 +1644,7 @@ if search_button:
                     </div>
                     """, unsafe_allow_html=True)
                 
-                # 전체적인 평가
-                total_pros = sum(category_pros.values())
-                total_cons = sum(category_cons.values())
-                if total_pros > 0 or total_cons > 0:
-                    positive_ratio = (total_pros / (total_pros + total_cons)) * 100
-                    
-                    if positive_ratio >= 70:
-                        overall_sentiment = "매우 긍정적"
-                        sentiment_color = "#28a745"
-                        sentiment_icon = "fa-thumbs-up"
-                        recommendation = "강력 추천합니다"
-                    elif positive_ratio >= 55:
-                        overall_sentiment = "긍정적"
-                        sentiment_color = "#20c997"
-                        sentiment_icon = "fa-smile"
-                        recommendation = "추천합니다"
-                    elif positive_ratio >= 45:
-                        overall_sentiment = "중립적"
-                        sentiment_color = "#ffc107"
-                        sentiment_icon = "fa-meh"
-                        recommendation = "신중한 검토 후 구매하세요"
-                    else:
-                        overall_sentiment = "개선 필요"
-                        sentiment_color = "#dc3545"
-                        sentiment_icon = "fa-frown"
-                        recommendation = "다른 대안을 고려해보세요"
-                    
-                    st.markdown(f"""
-                    <div style="background: rgba(108, 117, 125, 0.1); padding: 1.2rem; 
-                                border-radius: 12px; text-align: center; border: 2px solid {sentiment_color};">
-                        <h5 style="color: {sentiment_color}; margin-bottom: 0.8rem;">
-                            <i class="fas {sentiment_icon}"></i> 종합 평가
-                        </h5>
-                        <p style="margin: 0; line-height: 1.6; color: #495057; font-size: 1.1rem;">
-                            전체적으로 <strong style="color: {sentiment_color};">{overall_sentiment}</strong>인 평가를 받고 있으며, 
-                            <br>구매를 고려 중이시라면 <strong>{recommendation}</strong>.
-                        </p>
-                        <div style="margin-top: 1rem; padding: 0.8rem; background: rgba(255,255,255,0.5); 
-                                    border-radius: 8px;">
-                            <span style="font-size: 0.9rem; color: #6c757d;">
-                                긍정 의견 <strong>{positive_ratio:.1f}%</strong> | 
-                                부정 의견 <strong>{100-positive_ratio:.1f}%</strong>
-                            </span>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+
                 
                 st.markdown("</div>", unsafe_allow_html=True)
             else:
