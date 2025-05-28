@@ -109,6 +109,15 @@ st.markdown(f"""
         overflow: hidden;
     }}
     
+    .main-header h1 {{
+        text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3), 
+                     0 0 20px rgba(255, 255, 255, 0.2);
+    }}
+    
+    .main-header p {{
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }}
+    
     .main-header::before {{
         content: "";
         position: absolute;
