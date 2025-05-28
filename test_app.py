@@ -16,6 +16,11 @@ import requests
 from bs4 import BeautifulSoup
 import numpy as np
 import plotly.graph_objects as go
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+from collections import Counter
+import io
+import base64
 
 # LangGraph 관련
 from typing import TypedDict, Annotated, List, Union, Dict
@@ -599,6 +604,158 @@ def create_pros_cons_chart(pros_count, cons_count):
     
     return fig
 
+def extract_keywords(texts):
+    """텍스트에서 핵심 키워드 추출"""
+    # 불용어 정의
+    stopwords = {'수', '있습니다', '있어요', '있음', '좋습니다', '좋아요', '좋음', 
+                 '나쁩니다', '나빠요', '나쁨', '않습니다', '않아요', '않음',
+                 '입니다', '이다', '되다', '하다', '있다', '없다', '같다',
+                 '위해', '통해', '대해', '매우', '정말', '너무', '조금',
+                 '그리고', '하지만', '그러나', '또한', '때문', '경우'}
+    
+    # 모든 텍스트를 결합하고 키워드 추출
+    all_text = ' '.join(texts)
+    words = re.findall(r'[가-힣]+', all_text)
+    
+    # 2글자 이상의 단어만 필터링하고 불용어 제거
+    words = [word for word in words if len(word) >= 2 and word not in stopwords]
+    
+    # 단어 빈도 계산
+    word_freq = Counter(words)
+    
+    return word_freq
+
+def create_wordcloud(texts, title, color_scheme):
+    """워드클라우드 생성"""
+    if not texts:
+        return None
+    
+    # 키워드 추출
+    word_freq = extract_keywords(texts)
+    
+    if not word_freq:
+        return None
+    
+    # 한글 폰트 설정 (Streamlit Cloud에서 사용 가능한 폰트)
+    font_path = None
+    try:
+        # 시스템 폰트 경로 시도
+        import platform
+        system = platform.system()
+        
+        if system == "Darwin":  # macOS
+            font_path = "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
+        elif system == "Windows":
+            font_path = "C:/Windows/Fonts/malgun.ttf"
+        else:  # Linux/Streamlit Cloud
+            # Streamlit Cloud에서는 Noto Sans CJK 사용
+            font_paths = [
+                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/truetype/noto-cjk/NotoSansCJK-Regular.ttc",
+                "/app/.fonts/NotoSansCJK-Regular.ttc"
+            ]
+            for path in font_paths:
+                if os.path.exists(path):
+                    font_path = path
+                    break
+    except:
+        pass
+    
+    # 워드클라우드 생성
+    plt.figure(figsize=(10, 6))
+    
+    if font_path and os.path.exists(font_path):
+        wordcloud = WordCloud(
+            width=800,
+            height=400,
+            background_color='white',
+            colormap=color_scheme,
+            font_path=font_path,
+            relative_scaling=0.5,
+            min_font_size=10,
+            max_words=50
+        ).generate_from_frequencies(word_freq)
+    else:
+        # 폰트가 없는 경우 영어로 표시
+        wordcloud = WordCloud(
+            width=800,
+            height=400,
+            background_color='white',
+            colormap=color_scheme,
+            relative_scaling=0.5,
+            min_font_size=10,
+            max_words=50
+        ).generate_from_frequencies(word_freq)
+    
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis('off')
+    plt.title(title, fontsize=20, pad=20, weight='bold')
+    plt.tight_layout()
+    
+    # 이미지를 bytes로 변환
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor='white')
+    buf.seek(0)
+    plt.close()
+    
+    return buf
+
+def display_wordclouds(pros, cons):
+    """장단점 워드클라우드 표시"""
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if pros:
+            st.markdown("""
+            <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, #d4f1d4 0%, #b8e6b8 100%); border-radius: 15px;">
+                <h3 style="color: #28a745; margin: 0;">
+                    <i class="fas fa-check-circle"></i> 장점 키워드
+                </h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 장점 워드클라우드 생성
+            pros_wordcloud = create_wordcloud(pros, "", "Greens")
+            if pros_wordcloud:
+                st.image(pros_wordcloud, use_column_width=True)
+            else:
+                st.info("워드클라우드를 생성할 수 없습니다.")
+            
+            # 주요 키워드 표시
+            keywords = extract_keywords(pros)
+            if keywords:
+                st.markdown("**🔑 주요 키워드:**")
+                top_keywords = keywords.most_common(5)
+                keyword_html = " ".join([f'<span style="background: #d4f1d4; padding: 0.2rem 0.5rem; border-radius: 15px; margin: 0.2rem; display: inline-block;">{word} ({count})</span>' 
+                                        for word, count in top_keywords])
+                st.markdown(keyword_html, unsafe_allow_html=True)
+    
+    with col2:
+        if cons:
+            st.markdown("""
+            <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, #ffd6d6 0%, #ffb8b8 100%); border-radius: 15px;">
+                <h3 style="color: #dc3545; margin: 0;">
+                    <i class="fas fa-times-circle"></i> 단점 키워드
+                </h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 단점 워드클라우드 생성
+            cons_wordcloud = create_wordcloud(cons, "", "Reds")
+            if cons_wordcloud:
+                st.image(cons_wordcloud, use_column_width=True)
+            else:
+                st.info("워드클라우드를 생성할 수 없습니다.")
+            
+            # 주요 키워드 표시
+            keywords = extract_keywords(cons)
+            if keywords:
+                st.markdown("**🔑 주요 키워드:**")
+                top_keywords = keywords.most_common(5)
+                keyword_html = " ".join([f'<span style="background: #ffd6d6; padding: 0.2rem 0.5rem; border-radius: 15px; margin: 0.2rem; display: inline-block;">{word} ({count})</span>' 
+                                        for word, count in top_keywords])
+                st.markdown(keyword_html, unsafe_allow_html=True)
+
 # ========================
 # LangGraph 노드 함수들
 # ========================
@@ -945,13 +1102,13 @@ if search_button and product_name:
         </div>
         """, unsafe_allow_html=True)
         
-        # 차트 표시
-        st.plotly_chart(
-            create_pros_cons_chart(len(final_state["pros"]), len(final_state["cons"])),
-            use_container_width=True
-        )
+        # 워드클라우드 표시
+        display_wordclouds(final_state["pros"], final_state["cons"])
         
-        # 장단점 표시
+        # 장단점 상세 표시
+        st.markdown("---")
+        st.markdown("### 📋 상세 분석 결과")
+        
         col1, col2 = st.columns(2)
         
         with col1:
