@@ -790,7 +790,7 @@ def display_wordclouds(pros, cons):
             # 장점 워드클라우드 생성 시도
             pros_wordcloud = create_wordcloud(pros, "", "Greens")
             if pros_wordcloud:
-                st.image(pros_wordcloud, use_column_width=True)
+                st.image(pros_wordcloud, use_container_width=True)
             else:
                 # 워드클라우드 실패 시 텍스트 기반 시각화
                 create_text_cloud(pros, "장점 키워드 분석", "#28a745")
@@ -817,7 +817,7 @@ def display_wordclouds(pros, cons):
             # 단점 워드클라우드 생성 시도
             cons_wordcloud = create_wordcloud(cons, "", "Reds")
             if cons_wordcloud:
-                st.image(cons_wordcloud, use_column_width=True)
+                st.image(cons_wordcloud, use_container_width=True)
             else:
                 # 워드클라우드 실패 시 텍스트 기반 시각화
                 create_text_cloud(cons, "단점 키워드 분석", "#dc3545")
@@ -830,6 +830,216 @@ def display_wordclouds(pros, cons):
                 keyword_html = " ".join([f'<span style="background: #ffd6d6; padding: 0.2rem 0.5rem; border-radius: 15px; margin: 0.2rem; display: inline-block;">{word} ({count})</span>' 
                                         for word, count in top_keywords])
                 st.markdown(keyword_html, unsafe_allow_html=True)
+
+def analyze_sentiment(texts):
+    """텍스트 감성 분석"""
+    if not texts:
+        return {}
+    
+    # 긍정/부정 키워드 사전
+    positive_words = {
+        '좋다', '훌륭하다', '뛰어나다', '완벽하다', '만족', '추천', '최고', '편리하다', 
+        '빠르다', '가볍다', '세련되다', '안정적', '효율적', '강력하다', '우수하다',
+        '놀랍다', '대박', '예쁘다', '이쁘다', '멋지다', '훌륭', '좋은', '좋아요',
+        '만족스럽다', '괜찮다', '나쁘지않다', '마음에들다', '편하다', '빠른', '가벼운'
+    }
+    
+    negative_words = {
+        '나쁘다', '별로', '아쉽다', '부족하다', '불편하다', '느리다', '무겁다', 
+        '비싸다', '실망', '후회', '최악', '문제', '고장', '오류', '불량',
+        '짜증', '화나다', '싫다', '못생기다', '구리다', '답답하다', '어렵다',
+        '복잡하다', '번거롭다', '귀찮다', '불만', '단점', '안좋다', '별로다'
+    }
+    
+    # 감성 점수 계산
+    sentiment_scores = []
+    
+    for text in texts:
+        positive_score = sum(1 for word in positive_words if word in text)
+        negative_score = sum(1 for word in negative_words if word in text)
+        
+        # 정규화된 점수 (-1 ~ 1)
+        total = positive_score + negative_score
+        if total > 0:
+            score = (positive_score - negative_score) / total
+        else:
+            score = 0
+        
+        sentiment_scores.append(score)
+    
+    # 전체 감성 분석 결과
+    avg_score = np.mean(sentiment_scores) if sentiment_scores else 0
+    
+    # 감성 분포
+    very_positive = sum(1 for s in sentiment_scores if s > 0.5)
+    positive = sum(1 for s in sentiment_scores if 0 < s <= 0.5)
+    neutral = sum(1 for s in sentiment_scores if s == 0)
+    negative = sum(1 for s in sentiment_scores if -0.5 <= s < 0)
+    very_negative = sum(1 for s in sentiment_scores if s < -0.5)
+    
+    return {
+        'average_score': avg_score,
+        'distribution': {
+            '매우 긍정': very_positive,
+            '긍정': positive,
+            '중립': neutral,
+            '부정': negative,
+            '매우 부정': very_negative
+        },
+        'total_count': len(texts)
+    }
+
+def display_sentiment_analysis(pros, cons):
+    """감성 분석 결과 표시"""
+    st.markdown("---")
+    st.markdown("### 😊 감성 분석 결과")
+    
+    # 장단점 각각의 감성 분석
+    pros_sentiment = analyze_sentiment(pros)
+    cons_sentiment = analyze_sentiment(cons)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        # 전체 감성 점수 계산
+        if pros and cons:
+            total_score = (len(pros) * pros_sentiment['average_score'] - len(cons) * abs(cons_sentiment['average_score'])) / (len(pros) + len(cons))
+        else:
+            total_score = 0
+        
+        # 감성 게이지 차트
+        fig = go.Figure(go.Indicator(
+            mode = "gauge+number+delta",
+            value = total_score * 100,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': "종합 감성 점수", 'font': {'size': 24}},
+            delta = {'reference': 0, 'increasing': {'color': "green"}, 'decreasing': {'color': "red"}},
+            gauge = {
+                'axis': {'range': [-100, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+                'bar': {'color': "darkblue"},
+                'bgcolor': "white",
+                'borderwidth': 2,
+                'bordercolor': "gray",
+                'steps': [
+                    {'range': [-100, -50], 'color': '#ff4444'},
+                    {'range': [-50, -20], 'color': '#ff8888'},
+                    {'range': [-20, 20], 'color': '#ffcc00'},
+                    {'range': [20, 50], 'color': '#88ff88'},
+                    {'range': [50, 100], 'color': '#44ff44'}
+                ],
+                'threshold': {
+                    'line': {'color': "red", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 90
+                }
+            }
+        ))
+        
+        fig.update_layout(
+            height=300,
+            margin=dict(l=20, r=20, t=40, b=20),
+            paper_bgcolor='rgba(0,0,0,0)',
+            font={'color': text_color, 'family': "Arial"}
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # 감성 해석
+        if total_score > 0.5:
+            interpretation = "😄 매우 긍정적"
+            color = "#44ff44"
+        elif total_score > 0.2:
+            interpretation = "😊 긍정적"
+            color = "#88ff88"
+        elif total_score > -0.2:
+            interpretation = "😐 중립적"
+            color = "#ffcc00"
+        elif total_score > -0.5:
+            interpretation = "😟 부정적"
+            color = "#ff8888"
+        else:
+            interpretation = "😢 매우 부정적"
+            color = "#ff4444"
+        
+        st.markdown(f"""
+        <div style="text-align: center; padding: 1rem; background: {color}20; border-radius: 10px; margin: 1rem 0;">
+            <h2 style="color: {color}; margin: 0;">{interpretation}</h2>
+            <p style="margin: 0.5rem 0;">종합 점수: {total_score*100:.1f}점</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # 감성 분포 차트
+    st.markdown("#### 📊 감성 분포")
+    
+    # 장점과 단점의 감성 분포를 합친 데이터
+    categories = ['매우 긍정', '긍정', '중립', '부정', '매우 부정']
+    pros_values = [pros_sentiment['distribution'].get(cat, 0) for cat in categories]
+    cons_values = [cons_sentiment['distribution'].get(cat, 0) for cat in categories]
+    
+    fig2 = go.Figure()
+    
+    fig2.add_trace(go.Bar(
+        name='장점 리뷰',
+        x=categories,
+        y=pros_values,
+        marker_color='#28a745'
+    ))
+    
+    fig2.add_trace(go.Bar(
+        name='단점 리뷰',
+        x=categories,
+        y=cons_values,
+        marker_color='#dc3545'
+    ))
+    
+    fig2.update_layout(
+        barmode='group',
+        height=300,
+        margin=dict(l=0, r=0, t=30, b=0),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        xaxis_title="감성 카테고리",
+        yaxis_title="리뷰 수",
+        font=dict(size=12),
+        showlegend=True,
+        legend=dict(x=0.7, y=1)
+    )
+    
+    st.plotly_chart(fig2, use_container_width=True)
+    
+    # 감성 분석 인사이트
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        <div style="background: #e8f5e9; padding: 1rem; border-radius: 10px;">
+            <h5 style="color: #2e7d32; margin-bottom: 0.5rem;">
+                <i class="fas fa-smile"></i> 긍정적 측면
+            </h5>
+            <ul style="margin: 0; padding-left: 1.5rem;">
+                <li>전체 리뷰의 {:.1f}%가 긍정적</li>
+                <li>장점이 단점보다 {}개 더 많음</li>
+                <li>사용자 만족도가 높음</li>
+            </ul>
+        </div>
+        """.format(
+            (len(pros) / (len(pros) + len(cons)) * 100) if pros or cons else 0,
+            len(pros) - len(cons)
+        ), unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div style="background: #ffebee; padding: 1rem; border-radius: 10px;">
+            <h5 style="color: #c62828; margin-bottom: 0.5rem;">
+                <i class="fas fa-frown"></i> 개선 필요 사항
+            </h5>
+            <ul style="margin: 0; padding-left: 1.5rem;">
+                <li>주요 불만 사항 존재</li>
+                <li>가격 대비 가치 고려 필요</li>
+                <li>특정 기능 개선 요구</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
 
 # ========================
 # LangGraph 노드 함수들
@@ -1179,6 +1389,9 @@ if search_button and product_name:
         
         # 워드클라우드 표시
         display_wordclouds(final_state["pros"], final_state["cons"])
+        
+        # 감성 분석 표시
+        display_sentiment_analysis(final_state["pros"], final_state["cons"])
         
         # 장단점 상세 표시
         st.markdown("---")
