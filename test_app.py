@@ -366,14 +366,14 @@ with st.sidebar:
     st.metric("총 검색 수", f"{st.session_state.total_searches}회")
     st.metric("저장된 제품", f"{st.session_state.saved_products}개")
 
-# 헤더
+# 헤더 - 스마트한 쇼핑 제목만
 st.markdown("""
 <div class="main-header">
-    <h1>🛒 스마트한 쇼핑 (LangGraph Edition)</h1>
-    <p style="font-size: 1.2rem; margin-top: 1rem;">
+    <h1 style="margin-bottom: 0.5rem;">🛒 스마트한 쇼핑 (LangGraph Edition)</h1>
+    <p style="font-size: 1.2rem; margin-top: 0.5rem;">
         LangGraph로 구현한 지능형 제품 리뷰 분석 시스템
     </p>
-    <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.8;">
+    <p style="font-size: 0.9rem; margin-top: 0.3rem; opacity: 0.8;">
         <i class="fas fa-robot"></i> AI가 수천 개의 리뷰를 분석하여 핵심 장단점을 요약해드립니다
     </p>
 </div>
@@ -1277,15 +1277,73 @@ search_app = create_search_workflow()
 # ========================
 
 # 검색 섹션
-col1, col2, col3 = st.columns([1, 3, 1])
+st.markdown("""
+<style>
+    /* 검색 섹션 전체 스타일 */
+    .search-section {
+        margin-top: -2rem;
+        padding: 2rem 0;
+    }
+    
+    /* 검색 제목 스타일 */
+    .search-title {
+        text-align: center;
+        color: #333;
+        margin-bottom: 2rem;
+        font-size: 2.2rem;
+        font-weight: 600;
+    }
+    
+    /* 검색 입력창 크기 및 스타일 대폭 개선 */
+    .big-search .stTextInput > div > div > input {
+        height: 70px !important;
+        font-size: 1.6rem !important;
+        padding: 1.2rem 2.5rem !important;
+        border-radius: 50px !important;
+        border: 3px solid #e0e0e0 !important;
+        transition: all 0.3s ease !important;
+        text-align: center !important;
+    }
+    
+    .big-search .stTextInput > div > div > input:focus {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 5px rgba(102, 126, 234, 0.15) !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    /* 플레이스홀더 스타일 */
+    .big-search .stTextInput > div > div > input::placeholder {
+        color: #aaa !important;
+        font-size: 1.3rem !important;
+        text-align: center !important;
+    }
+    
+    /* 버튼 크기 조정 */
+    .search-buttons .stButton > button {
+        height: 55px !important;
+        font-size: 1.3rem !important;
+        padding: 0 3rem !important;
+        font-weight: 600 !important;
+    }
+    
+    /* 검색 카드 조정 */
+    .search-card {
+        background: transparent !important;
+        box-shadow: none !important;
+        padding: 1rem !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns([1, 4, 1])
 
 with col2:
-    st.markdown('<div class="search-card fade-in">', unsafe_allow_html=True)
+    st.markdown('<div class="search-section">', unsafe_allow_html=True)
     
     # 제목을 위에 배치
     st.markdown("""
-    <h2 style="text-align: center; color: #333; margin-bottom: 2rem; font-size: 2rem;">
-        <i class="fas fa-search"></i> 어떤 제품을 찾고 계신가요?
+    <h2 class="search-title">
+        어떤 제품을 찾고 계신가요?
     </h2>
     """, unsafe_allow_html=True)
     
@@ -1295,50 +1353,18 @@ with col2:
         default_value = st.session_state.selected_bookmark
         del st.session_state.selected_bookmark
     
-    # 검색창 스타일 추가
-    st.markdown("""
-    <style>
-        /* 검색 입력창 크기 및 스타일 개선 */
-        .stTextInput > div > div > input {
-            height: 60px !important;
-            font-size: 1.5rem !important;
-            padding: 1rem 2rem !important;
-            border-radius: 50px !important;
-            border: 3px solid #e0e0e0 !important;
-            transition: all 0.3s ease !important;
-        }
-        
-        .stTextInput > div > div > input:focus {
-            border-color: #667eea !important;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15) !important;
-            transform: translateY(-2px) !important;
-        }
-        
-        /* 플레이스홀더 스타일 */
-        .stTextInput > div > div > input::placeholder {
-            color: #999 !important;
-            font-size: 1.2rem !important;
-        }
-        
-        /* 버튼 크기 조정 */
-        .search-buttons .stButton > button {
-            height: 50px !important;
-            font-size: 1.2rem !important;
-            padding: 0 2.5rem !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # 검색창을 아래에 배치
+    # 큰 검색창
+    st.markdown('<div class="big-search">', unsafe_allow_html=True)
     product_name = st.text_input(
-        "제품명 입력",  # label 추가
+        "제품명 입력",
         placeholder="예: 맥북 프로 M3, LG 그램 2024, 갤럭시북4 프로",
         value=default_value,
-        label_visibility="collapsed"  # label은 숨기되 경고 방지
+        label_visibility="collapsed"
     )
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # 버튼들
-    st.markdown('<div class="search-buttons">', unsafe_allow_html=True)
+    st.markdown('<div class="search-buttons" style="margin-top: 1.5rem;">', unsafe_allow_html=True)
     col_btn1, col_btn2, col_btn3 = st.columns([2.5, 2, 0.5])
     with col_btn1:
         search_button = st.button("🔍 검색하기", use_container_width=True, type="primary")
@@ -1352,17 +1378,22 @@ with col2:
                 st.session_state.total_searches += 1
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # 인기 검색어 (선택사항)
+    # 인기 검색어
     st.markdown("""
-    <div style="text-align: center; margin-top: 1.5rem;">
-        <p style="opacity: 0.7; font-size: 1rem; margin-bottom: 0.5rem;">인기 검색어</p>
+    <div style="text-align: center; margin-top: 2rem;">
+        <p style="opacity: 0.7; font-size: 1.1rem; margin-bottom: 1rem; color: #666;">인기 검색어</p>
     """, unsafe_allow_html=True)
     
     popular_searches = ["맥북 프로 M3", "LG 그램 2024", "갤럭시북4 프로", "델 XPS 15"]
     cols = st.columns(len(popular_searches))
     for idx, (col, search) in enumerate(zip(cols, popular_searches)):
         with col:
-            if st.button(search, key=f"popular_{idx}", use_container_width=True):
+            if st.button(
+                search, 
+                key=f"popular_{idx}", 
+                use_container_width=True,
+                help=f"{search} 검색하기"
+            ):
                 st.session_state.selected_bookmark = search
                 st.rerun()
     
