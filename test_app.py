@@ -1,3 +1,7 @@
+
+"""
+스마트한 쇼핑 앱 - LangGraph 버전 (수정판)
+"""
 # 앱 시작 시 폰트 자동 다운로드
 import os
 import urllib.request
@@ -31,10 +35,6 @@ def ensure_font():
 
 # 앱 시작 시 폰트 확인
 font_path = ensure_font()
-
-"""
-스마트한 쇼핑 앱 - LangGraph 버전 (수정판)
-"""
 
 import streamlit as st
 import pandas as pd
