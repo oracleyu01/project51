@@ -1281,66 +1281,79 @@ st.markdown("""
 <style>
     /* 검색 섹션 전체 스타일 */
     .search-section {
-        margin-top: -2rem;
-        padding: 2rem 0;
+        margin-top: -3rem;
+        padding: 1rem 0 2rem 0;
     }
     
-    /* 검색 제목 스타일 */
+    /* 검색 제목 스타일 - 위치 상향 조정 */
     .search-title {
         text-align: center;
         color: #333;
-        margin-bottom: 2rem;
-        font-size: 2.2rem;
-        font-weight: 600;
+        margin-bottom: 1.5rem;
+        margin-top: -1rem;
+        font-size: 2.5rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
     }
     
-    /* 검색 입력창 크기 및 스타일 대폭 개선 */
+    /* 검색 입력창 크기 대폭 확대 및 굵은 글씨 */
     .big-search .stTextInput > div > div > input {
-        height: 70px !important;
-        font-size: 1.6rem !important;
-        padding: 1.2rem 2.5rem !important;
+        height: 85px !important;
+        font-size: 1.8rem !important;
+        font-weight: 600 !important;
+        padding: 1.5rem 3rem !important;
         border-radius: 50px !important;
         border: 3px solid #e0e0e0 !important;
         transition: all 0.3s ease !important;
         text-align: center !important;
+        letter-spacing: 0.5px !important;
     }
     
     .big-search .stTextInput > div > div > input:focus {
         border-color: #667eea !important;
-        box-shadow: 0 0 0 5px rgba(102, 126, 234, 0.15) !important;
+        box-shadow: 0 0 0 6px rgba(102, 126, 234, 0.15) !important;
         transform: translateY(-2px) !important;
     }
     
     /* 플레이스홀더 스타일 */
     .big-search .stTextInput > div > div > input::placeholder {
-        color: #aaa !important;
-        font-size: 1.3rem !important;
+        color: #999 !important;
+        font-size: 1.4rem !important;
         text-align: center !important;
+        font-weight: 400 !important;
     }
     
     /* 버튼 크기 조정 */
     .search-buttons .stButton > button {
-        height: 55px !important;
-        font-size: 1.3rem !important;
-        padding: 0 3rem !important;
-        font-weight: 600 !important;
+        height: 60px !important;
+        font-size: 1.4rem !important;
+        padding: 0 3.5rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.5px !important;
     }
     
     /* 검색 카드 조정 */
     .search-card {
         background: transparent !important;
         box-shadow: none !important;
-        padding: 1rem !important;
+        padding: 0.5rem !important;
+    }
+    
+    /* 인기 검색어 버튼 스타일 */
+    .popular-search-buttons .stButton > button {
+        height: 45px !important;
+        font-size: 1.1rem !important;
+        font-weight: 500 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns([1, 4, 1])
+col1, col2, col3 = st.columns([1, 5, 1])
 
 with col2:
     st.markdown('<div class="search-section">', unsafe_allow_html=True)
     
-    # 제목을 위에 배치
+    # 제목을 위에 배치 - 더 위로 올림
     st.markdown("""
     <h2 class="search-title">
         어떤 제품을 찾고 계신가요?
@@ -1352,20 +1365,23 @@ with col2:
     if 'selected_bookmark' in st.session_state:
         default_value = st.session_state.selected_bookmark
         del st.session_state.selected_bookmark
+    elif 'search_query' in st.session_state:
+        default_value = st.session_state.search_query
     
-    # 큰 검색창
+    # 더 큰 검색창
     st.markdown('<div class="big-search">', unsafe_allow_html=True)
     product_name = st.text_input(
         "제품명 입력",
         placeholder="예: 맥북 프로 M3, LG 그램 2024, 갤럭시북4 프로",
         value=default_value,
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        key="product_search_input"
     )
     st.markdown('</div>', unsafe_allow_html=True)
     
     # 버튼들
-    st.markdown('<div class="search-buttons" style="margin-top: 1.5rem;">', unsafe_allow_html=True)
-    col_btn1, col_btn2, col_btn3 = st.columns([2.5, 2, 0.5])
+    st.markdown('<div class="search-buttons" style="margin-top: 1.8rem;">', unsafe_allow_html=True)
+    col_btn1, col_btn2, col_btn3 = st.columns([3, 2.5, 0.5])
     with col_btn1:
         search_button = st.button("🔍 검색하기", use_container_width=True, type="primary")
     with col_btn2:
@@ -1380,8 +1396,8 @@ with col2:
     
     # 인기 검색어
     st.markdown("""
-    <div style="text-align: center; margin-top: 2rem;">
-        <p style="opacity: 0.7; font-size: 1.1rem; margin-bottom: 1rem; color: #666;">인기 검색어</p>
+    <div class="popular-search-buttons" style="text-align: center; margin-top: 2rem;">
+        <p style="opacity: 0.7; font-size: 1.2rem; margin-bottom: 1rem; color: #666; font-weight: 500;">인기 검색어</p>
     """, unsafe_allow_html=True)
     
     popular_searches = ["맥북 프로 M3", "LG 그램 2024", "갤럭시북4 프로", "델 XPS 15"]
@@ -1394,32 +1410,42 @@ with col2:
                 use_container_width=True,
                 help=f"{search} 검색하기"
             ):
-                st.session_state.selected_bookmark = search
+                # 검색어를 직접 세션 상태에 저장
+                st.session_state.search_query = search
                 st.rerun()
     
     st.markdown('</div></div>', unsafe_allow_html=True)
 
 # 검색 실행
-if search_button and product_name:
-    loading_placeholder = show_loading_animation()
+if search_button:
+    # 인기 검색어로 선택된 경우 해당 검색어 사용
+    if 'search_query' in st.session_state and st.session_state.search_query:
+        search_term = st.session_state.search_query
+        # 검색 후 세션 상태 정리
+        st.session_state.search_query = ""
+    else:
+        search_term = product_name
     
-    # LangGraph 실행
-    initial_state = {
-        "product_name": product_name,
-        "search_method": "",
-        "results": {},
-        "pros": [],
-        "cons": [],
-        "sources": [],
-        "messages": [],
-        "error": ""
-    }
-    
-    # 워크플로우 실행
-    final_state = search_app.invoke(initial_state)
-    
-    # 로딩 애니메이션 제거
-    loading_placeholder.empty()
+    if search_term:
+        loading_placeholder = show_loading_animation()
+        
+        # LangGraph 실행
+        initial_state = {
+            "product_name": search_term,
+            "search_method": "",
+            "results": {},
+            "pros": [],
+            "cons": [],
+            "sources": [],
+            "messages": [],
+            "error": ""
+        }
+        
+        # 워크플로우 실행
+        final_state = search_app.invoke(initial_state)
+        
+        # 로딩 애니메이션 제거
+        loading_placeholder.empty()
     
     # 프로세스 로그 표시
     if show_process and final_state["messages"]:
