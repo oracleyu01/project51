@@ -429,7 +429,7 @@ st.markdown("""
         LangGraph로 구현한 지능형 제품 리뷰 분석 시스템
     </p>
     <p style="font-size: 0.9rem; margin-top: 0.3rem; opacity: 0.8;">
-        <i class="fas fa-robot"></i> AI가 수천 개의 리뷰를 분석하여 핵심 장단점을 요약해드립니다
+        🤖 AI가 수천 개의 리뷰를 분석하여 핵심 장단점을 요약해드립니다
     </p>
 </div>
 """, unsafe_allow_html=True)
