@@ -36,6 +36,27 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# 한글 폰트 자동 다운로드
+@st.cache_resource
+def download_font():
+    """한글 폰트 다운로드"""
+    font_path = "./NanumGothic.ttf"
+    if not os.path.exists(font_path):
+        try:
+            import urllib.request
+            # 나눔고딕 폰트 다운로드
+            url = "https://github.com/naver/nanumfont/raw/master/fonts/NanumFontSetup_TTF_GOTHIC/NanumGothic.ttf"
+            urllib.request.urlretrieve(url, font_path)
+            st.success("한글 폰트 다운로드 완료!")
+            return font_path
+        except Exception as e:
+            st.warning(f"폰트 다운로드 실패: {e}")
+            return None
+    return font_path
+
+# 폰트 다운로드 시도
+download_font()
+
 # 환경 변수 로드
 load_dotenv()
 
@@ -639,52 +660,54 @@ def create_wordcloud(texts, title, color_scheme):
     # matplotlib 한글 폰트 설정
     import matplotlib as mpl
     import matplotlib.font_manager as fm
+    import matplotlib.pyplot as plt
     
-    # 현재 설치된 폰트 목록 확인
-    font_list = fm.findSystemFonts(fontpaths=None, fontext='ttf')
+    # 기본 설정으로 matplotlib 재설정
+    plt.rcParams['font.family'] = 'DejaVu Sans'
+    plt.rcParams['axes.unicode_minus'] = False
     
-    # 한글 폰트 찾기
-    korean_fonts = []
-    for font in font_list:
+    # Streamlit Cloud에서 사용 가능한 폰트 경로들
+    font_paths = [
+        # Linux/Ubuntu (Streamlit Cloud)
+        "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+        "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/fonts-japanese-gothic.ttf",
+        # 프로젝트 내부 폰트
+        "./fonts/NanumGothic.ttf",
+        "./NanumGothic.ttf",
+        # Windows
+        "C:/Windows/Fonts/malgun.ttf",
+        "C:/Windows/Fonts/NanumGothic.ttf",
+        # macOS
+        "/System/Library/Fonts/AppleSDGothicNeo.ttc",
+        "/Library/Fonts/NanumGothic.ttf"
+    ]
+    
+    # 사용 가능한 폰트 찾기
+    font_path = None
+    for path in font_paths:
+        if os.path.exists(path):
+            font_path = path
+            break
+    
+    # 폰트를 찾지 못한 경우 시스템 폰트에서 한글 폰트 검색
+    if not font_path:
         try:
-            if any(keyword in font.lower() for keyword in ['noto', 'malgun', 'nanum', 'gothic', 'gulim']):
-                korean_fonts.append(font)
+            font_list = fm.findSystemFonts(fontpaths=None, fontext='ttf')
+            for font in font_list:
+                if any(keyword in os.path.basename(font).lower() for keyword in ['nanum', 'malgun', 'gothic']):
+                    font_path = font
+                    break
         except:
             pass
     
-    # 폰트 설정
-    font_path = None
-    if korean_fonts:
-        font_path = korean_fonts[0]
-    else:
-        # Streamlit Cloud 환경에서의 기본 폰트 경로들
-        font_paths = [
-            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-            "/usr/share/fonts/truetype/noto-cjk/NotoSansCJK-Regular.ttc",
-            "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
-            "/app/.fonts/NotoSansCJK-Regular.ttc",
-            "./fonts/NanumGothic.ttf"  # 프로젝트 폴더에 폰트 파일을 넣은 경우
-        ]
-        
-        for path in font_paths:
-            if os.path.exists(path):
-                font_path = path
-                break
+    # 워드클라우드 생성
+    plt.figure(figsize=(10, 6), facecolor='white')
     
-    # matplotlib 한글 설정
-    try:
-        if font_path:
-            font_name = fm.FontProperties(fname=font_path).get_name()
-            mpl.rcParams['font.family'] = font_name
-            mpl.rcParams['axes.unicode_minus'] = False
-    except:
-        pass
-    
-    # 워드클라우드 생성 시도
-    plt.figure(figsize=(10, 6))
-    
-    try:
-        if font_path and os.path.exists(font_path):
+    if font_path and os.path.exists(font_path):
+        try:
+            # 폰트 경로가 있는 경우
             wordcloud = WordCloud(
                 width=800,
                 height=400,
@@ -692,47 +715,31 @@ def create_wordcloud(texts, title, color_scheme):
                 colormap=color_scheme,
                 font_path=font_path,
                 relative_scaling=0.5,
-                min_font_size=10,
-                max_words=50,
-                prefer_horizontal=0.7
+                min_font_size=12,
+                max_words=30,
+                prefer_horizontal=0.7,
+                margin=10
             ).generate_from_frequencies(word_freq)
-        else:
-            # 폰트가 없는 경우 기본 처리
-            st.warning("한글 폰트를 찾을 수 없습니다. 영문으로 표시됩니다.")
-            # 한글을 영문으로 변환 (임시)
-            english_freq = {}
-            for i, (word, freq) in enumerate(word_freq.items()):
-                english_freq[f"keyword{i+1}"] = freq
             
-            wordcloud = WordCloud(
-                width=800,
-                height=400,
-                background_color='white',
-                colormap=color_scheme,
-                relative_scaling=0.5,
-                min_font_size=10,
-                max_words=50
-            ).generate_from_frequencies(english_freq)
-        
-        plt.imshow(wordcloud, interpolation='bilinear')
-        plt.axis('off')
-        plt.title(title, fontsize=20, pad=20, weight='bold')
-        plt.tight_layout()
-        
-        # 이미지를 bytes로 변환
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor='white')
-        buf.seek(0)
-        plt.close()
-        
-        return buf
-        
-    except Exception as e:
-        st.error(f"워드클라우드 생성 오류: {str(e)}")
-        plt.close()
-        
-        # 대체 방안: 텍스트 기반 시각화
-        return None
+            plt.imshow(wordcloud, interpolation='bilinear')
+            plt.axis('off')
+            plt.tight_layout(pad=0)
+            
+            # 이미지를 bytes로 변환
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor='white', edgecolor='none')
+            buf.seek(0)
+            plt.close()
+            
+            return buf
+            
+        except Exception as e:
+            plt.close()
+            st.warning(f"워드클라우드 생성 중 오류 발생: {str(e)}")
+    
+    # 폰트를 찾지 못했거나 오류가 발생한 경우
+    # HTML 기반 워드클라우드 반환을 위해 None 반환
+    return None
 
 def create_text_cloud(texts, title, color):
     """워드클라우드 대신 텍스트 기반 시각화"""
