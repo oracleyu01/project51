@@ -1298,29 +1298,32 @@ st.markdown("""
     
     /* 검색 입력창 크기 대폭 확대 및 굵은 글씨 */
     .big-search .stTextInput > div > div > input {
-        height: 85px !important;
-        font-size: 1.8rem !important;
-        font-weight: 600 !important;
-        padding: 1.5rem 3rem !important;
+        height: 100px !important;
+        font-size: 2.2rem !important;
+        font-weight: 700 !important;
+        padding: 2rem 3.5rem !important;
         border-radius: 50px !important;
-        border: 3px solid #e0e0e0 !important;
+        border: 4px solid #e0e0e0 !important;
         transition: all 0.3s ease !important;
         text-align: center !important;
-        letter-spacing: 0.5px !important;
+        letter-spacing: 1px !important;
+        line-height: 1.2 !important;
     }
     
     .big-search .stTextInput > div > div > input:focus {
         border-color: #667eea !important;
-        box-shadow: 0 0 0 6px rgba(102, 126, 234, 0.15) !important;
+        box-shadow: 0 0 0 8px rgba(102, 126, 234, 0.15) !important;
         transform: translateY(-2px) !important;
+        border-width: 4px !important;
     }
     
     /* 플레이스홀더 스타일 */
     .big-search .stTextInput > div > div > input::placeholder {
-        color: #999 !important;
-        font-size: 1.4rem !important;
+        color: #aaa !important;
+        font-size: 1.5rem !important;
         text-align: center !important;
         font-weight: 400 !important;
+        opacity: 0.7 !important;
     }
     
     /* 버튼 크기 조정 */
