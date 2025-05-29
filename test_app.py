@@ -371,19 +371,26 @@ with st.sidebar:
     st.markdown("### 📊 사용 통계")
     st.metric("총 검색 수", f"{st.session_state.total_searches}회")
     st.metric("저장된 제품", f"{st.session_state.saved_products}개")
-
-# 헤더 - 스마트한 쇼핑 제목만
-st.markdown("""
-<div class="main-header">
-    <h1 style="margin-bottom: 0.5rem;">🛒 스마트한 쇼핑 (LangGraph Edition)</h1>
-    <p style="font-size: 1.2rem; margin-top: 0.5rem;">
-        LangGraph로 구현한 지능형 제품 리뷰 분석 시스템
-    </p>
-    <p style="font-size: 0.9rem; margin-top: 0.3rem; opacity: 0.8;">
-        <i class="fas fa-robot"></i> AI가 수천 개의 리뷰를 분석하여 핵심 장단점을 요약해드립니다
-    </p>
-</div>
-""", unsafe_allow_html=True)
+    
+    # 사이드바 하단에 쿠팡 링크 추가
+    st.markdown("---")
+    st.markdown("""
+    <div style="margin-top: 2rem; padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                border-radius: 15px; text-align: center;">
+        <h4 style="color: white; margin-bottom: 0.5rem;">
+            🛒 쿠팡 바로가기
+        </h4>
+        <a href="https://link.coupang.com/a/cwmeuD" target="_blank" 
+           style="display: inline-block; background: white; color: #667eea; 
+                  padding: 8px 20px; border-radius: 20px; text-decoration: none; 
+                  font-weight: 600; margin-top: 0.5rem;">
+            쿠팡 방문하기 →
+        </a>
+        <p style="color: white; font-size: 0.7rem; margin-top: 0.5rem; opacity: 0.8;">
+            파트너스 활동을 통해<br>일정액의 수수료를 제공받습니다
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ========================
 # LangGraph State 정의
