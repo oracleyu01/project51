@@ -82,6 +82,8 @@ NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET") or st.secrets.get("NAVER_
 # 쿠팡 파트너스 설정
 COUPANG_PARTNER_ID = os.getenv("COUPANG_PARTNER_ID") or st.secrets.get("COUPANG_PARTNER_ID", "")
 COUPANG_ACCESS_KEY = os.getenv("COUPANG_ACCESS_KEY") or st.secrets.get("COUPANG_ACCESS_KEY", "")
+# 이 줄을 추가하세요:
+COUPANG_PARTNER_TAG = os.getenv("COUPANG_PARTNER_TAG") or st.secrets.get("COUPANG_PARTNER_TAG", "AF2834321")
 
 # LangSmith 설정 (선택적)
 LANGSMITH_API_KEY = os.getenv("LANGSMITH_API_KEY") or st.secrets.get("LANGSMITH_API_KEY", "")
