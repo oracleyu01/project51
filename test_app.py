@@ -993,30 +993,38 @@ def create_comparison_chart(pros, cons):
     return fig
 
 def generate_coupang_search_link(product_name):
-    """쿠팡 검색 링크 생성 (API 키 없이)"""
+    """쿠팡 파트너스 제휴 링크 생성"""
     import urllib.parse
+    
+    # 파트너 태그 (실제 발급받은 태그)
+    PARTNER_TAG = "AF2834321"
     
     # 검색어 URL 인코딩
     encoded_keyword = urllib.parse.quote(product_name)
     
-    # 쿠팡 검색 링크 생성
-    coupang_search_link = f"https://www.coupang.com/np/search?q={encoded_keyword}"
+    # 쿠팡 검색 딥링크 생성 (파트너스 수익 발생)
+    coupang_affiliate_link = f"https://link.coupang.com/re/CSHARESDP?lptag={PARTNER_TAG}&pageKey=&itemId=&vendorItemId=&q={encoded_keyword}"
     
-    return coupang_search_link
+    return coupang_affiliate_link
 
 def get_sample_coupang_product(product_name):
-    """쿠팡 상품 정보 샘플 생성 (승인용)"""
-    # 승인을 위한 샘플 상품 정보
+    """쿠팡 상품 정보 샘플 생성 (파트너스 링크 포함)"""
+    # 파트너스 제휴 링크 생성
+    affiliate_link = generate_coupang_search_link(product_name)
+    
+    # 샘플 상품 정보
     sample_product = {
         "productName": f"{product_name}",
         "productPrice": "최저가 확인",
         "productImage": "https://via.placeholder.com/200x200/ff6b35/ffffff?text=COUPANG",
         "isRocket": True,
-        "productUrl": generate_coupang_search_link(product_name),
+        "productUrl": affiliate_link,  # 파트너스 링크 사용
         "vendorName": "쿠팡",
         "description": f"{product_name}의 다양한 옵션을 쿠팡에서 확인해보세요!"
     }
     return sample_product
+
+    
     """요약 메트릭 시각화"""
     # 텍스트 통계
     total_reviews = len(pros) + len(cons)
@@ -1849,7 +1857,7 @@ if search_button:
                         AI가 분석한 <strong>핵심 강점</strong>을 고려하여 쿠팡에서 최적의 상품을 찾아보세요!
                     </div>
                     <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #999;">
-                        * 이 사이트는 쿠팡 파트너스 승인을 위해 제작되었습니다.
+                        * 이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
