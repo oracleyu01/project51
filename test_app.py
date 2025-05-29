@@ -1418,7 +1418,7 @@ with col2:
     # 제목을 위에 배치 - 더 위로 올림
     st.markdown("""
     <h2 class="search-title">
-        어떤 제품을 찾고 계신가요?
+        어떤 상품을 찾고 계신가요?
     </h2>
     """, unsafe_allow_html=True)
     
