@@ -996,14 +996,14 @@ def generate_coupang_search_link(product_name):
     """쿠팡 파트너스 제휴 링크 생성"""
     import urllib.parse
     
-    # 파트너 태그 (실제 발급받은 태그)
-    PARTNER_TAG = "AF2834321"
+    # 파트너 태그
+    PARTNER_TAG = COUPANG_PARTNER_TAG or "AF2834321"
     
     # 검색어 URL 인코딩
     encoded_keyword = urllib.parse.quote(product_name)
     
-    # 쿠팡 검색 딥링크 생성 (파트너스 수익 발생)
-    coupang_affiliate_link = f"https://link.coupang.com/re/CSHARESDP?lptag={PARTNER_TAG}&pageKey=&itemId=&vendorItemId=&q={encoded_keyword}"
+    # 쿠팡 파트너스 검색 링크 (간단한 형식)
+    coupang_affiliate_link = f"https://link.coupang.com/a/{PARTNER_TAG}?lptag={PARTNER_TAG}&pageKey=&traceid=V0-153&itemId=&vendorItemId=&q={encoded_keyword}"
     
     return coupang_affiliate_link
 
