@@ -372,22 +372,25 @@ with st.sidebar:
     st.metric("총 검색 수", f"{st.session_state.total_searches}회")
     st.metric("저장된 제품", f"{st.session_state.saved_products}개")
     
-    # 사이드바 하단에 쿠팡 링크 추가
+    # 사이드바 하단에 쿠팡 배너 추가
     st.markdown("---")
+    st.markdown("### 🛒 쿠팡 추천 상품")
+    
+    # iframe을 중앙 정렬하고 스타일 적용
     st.markdown("""
-    <div style="margin-top: 2rem; padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                border-radius: 15px; text-align: center;">
-        <h4 style="color: white; margin-bottom: 0.5rem;">
-            🛒 쿠팡 바로가기
-        </h4>
-        <a href="https://link.coupang.com/a/cwmeuD" target="_blank" 
-           style="display: inline-block; background: white; color: #667eea; 
-                  padding: 8px 20px; border-radius: 20px; text-decoration: none; 
-                  font-weight: 600; margin-top: 0.5rem;">
-            쿠팡 방문하기 →
-        </a>
-        <p style="color: white; font-size: 0.7rem; margin-top: 0.5rem; opacity: 0.8;">
-            파트너스 활동을 통해<br>일정액의 수수료를 제공받습니다
+    <div style="text-align: center; padding: 1rem 0;">
+        <iframe src="https://coupa.ng/ciuK2D" 
+                width="120" 
+                height="240" 
+                frameborder="0" 
+                scrolling="no" 
+                referrerpolicy="unsafe-url" 
+                browsingtopics
+                style="border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+        </iframe>
+        <p style="font-size: 0.7rem; color: #666; margin-top: 0.5rem;">
+            이 포스팅은 쿠팡 파트너스 활동의 일환으로,<br>
+            이에 따른 일정액의 수수료를 제공받습니다.
         </p>
     </div>
     """, unsafe_allow_html=True)
