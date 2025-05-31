@@ -11,12 +11,12 @@ import plotly.graph_objects as go
 import plotly.express as px
 import os
 
-# 페이지 설정
+# 페이지 설정 - 사이드바 숨김
 st.set_page_config(
     page_title="빅데이터분석기사 실기 Q&A",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"  # 사이드바 숨김
 )
 
 # 세션 상태 초기화
@@ -42,6 +42,8 @@ def initialize_session_state():
         st.session_state.total_questions = 0
     if 'study_progress' not in st.session_state:
         st.session_state.study_progress = {}
+    if 'selected_quick_question' not in st.session_state:
+        st.session_state.selected_quick_question = None
 
 initialize_session_state()
 
@@ -52,37 +54,35 @@ if st.session_state.dark_mode:
     text_color = "#ffffff"
     secondary_text = "#e94560"
     header_gradient = "linear-gradient(135deg, #e94560 0%, #0f3460 100%)"
-    sidebar_bg = "#16213e"
 else:
     bg_gradient = "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)"
     card_bg = "white"
     text_color = "#333333"
     secondary_text = "#667eea"
     header_gradient = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-    sidebar_bg = "#f8f9fa"
 
 st.markdown(f"""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
+    /* 사이드바 숨기기 */
+    section[data-testid="stSidebar"] {{
+        display: none;
+    }}
+    
     /* 전체 배경 및 기본 스타일 */
     .stApp {{
         background: {bg_gradient};
         color: {text_color};
     }}
     
-    /* 사이드바 스타일 */
-    .css-1d391kg {{
-        background: {sidebar_bg};
-    }}
-    
     /* 메인 헤더 개선 */
     .main-header {{
         text-align: center;
-        padding: 3rem 2rem;
+        padding: 2rem 1rem;
         background: {header_gradient};
         color: white;
         border-radius: 20px;
-        margin-bottom: 3rem;
+        margin-bottom: 2rem;
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
         position: relative;
         overflow: hidden;
@@ -105,16 +105,16 @@ st.markdown(f"""
     }}
     
     .main-header h1 {{
-        font-size: 3rem;
+        font-size: 2.5rem;
         font-weight: 700;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
         text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
         letter-spacing: -1px;
     }}
     
     .main-header p {{
-        font-size: 1.3rem;
-        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+        margin-bottom: 0.3rem;
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         opacity: 0.95;
     }}
@@ -122,10 +122,10 @@ st.markdown(f"""
     /* 카드 스타일 */
     .content-card {{
         background: {card_bg};
-        padding: 2.5rem;
+        padding: 2rem;
         border-radius: 20px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
         border: 1px solid rgba(255, 255, 255, 0.1);
         transition: all 0.3s ease;
     }}
@@ -138,7 +138,7 @@ st.markdown(f"""
     /* 문제 카드 스타일 */
     .problem-card {{
         background: linear-gradient(135deg, {card_bg} 0%, rgba(102, 126, 234, 0.05) 100%);
-        padding: 2rem;
+        padding: 1.5rem;
         border-radius: 15px;
         margin: 1rem 0;
         border-left: 5px solid {secondary_text};
@@ -161,21 +161,6 @@ st.markdown(f"""
         border: 1px solid rgba(102, 126, 234, 0.1);
     }}
     
-    /* 질문 히스토리 */
-    .question-history {{
-        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        margin: 0.5rem 0;
-        border-left: 4px solid #2196f3;
-        transition: all 0.3s ease;
-    }}
-    
-    .question-history:hover {{
-        transform: translateX(5px);
-        box-shadow: 0 3px 10px rgba(33, 150, 243, 0.2);
-    }}
-    
     /* AI 답변 */
     .ai-response {{
         background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
@@ -191,10 +176,10 @@ st.markdown(f"""
         background: {header_gradient};
         color: white;
         border: none;
-        padding: 0.8rem 2.5rem;
+        padding: 0.7rem 2rem;
         border-radius: 25px;
         font-weight: 600;
-        font-size: 1.1rem;
+        font-size: 1rem;
         transition: all 0.3s ease;
         box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         letter-spacing: 0.5px;
@@ -214,7 +199,7 @@ st.markdown(f"""
         transition: all 0.3s ease;
         background: {card_bg};
         color: {text_color};
-        font-size: 1.1rem;
+        font-size: 1rem;
     }}
     
     .stTextArea > div > div > textarea:focus {{
@@ -247,7 +232,7 @@ st.markdown(f"""
     /* 메트릭 카드 */
     .metric-card {{
         background: {card_bg};
-        padding: 2rem;
+        padding: 1.5rem;
         border-radius: 15px;
         box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
         text-align: center;
@@ -270,28 +255,6 @@ st.markdown(f"""
         animation: fadeIn 0.8s ease-out;
     }}
     
-    /* 로딩 스피너 */
-    .loading-spinner {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 3rem;
-    }}
-    
-    .spinner {{
-        width: 60px;
-        height: 60px;
-        border: 6px solid rgba(102, 126, 234, 0.1);
-        border-top: 6px solid {secondary_text};
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }}
-    
-    @keyframes spin {{
-        0% {{ transform: rotate(0deg); }}
-        100% {{ transform: rotate(360deg); }}
-    }}
-    
     /* 프로그레스 바 */
     .progress-container {{
         background: rgba(102, 126, 234, 0.1);
@@ -307,28 +270,6 @@ st.markdown(f"""
         transition: width 1s ease;
     }}
     
-    /* 문제 선택 카드 */
-    .problem-selector {{
-        background: {card_bg};
-        padding: 1.5rem;
-        border-radius: 12px;
-        margin: 0.5rem 0;
-        border: 2px solid transparent;
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }}
-    
-    .problem-selector:hover {{
-        border-color: {secondary_text};
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
-    }}
-    
-    .problem-selector.selected {{
-        border-color: {secondary_text};
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, {card_bg} 100%);
-    }}
-    
     /* 코드 블록 개선 */
     .stCodeBlock {{
         border-radius: 12px;
@@ -338,9 +279,9 @@ st.markdown(f"""
     /* 인프런 광고 섹션 */
     .inflearn-ad {{
         background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
-        padding: 2.5rem;
+        padding: 2rem;
         border-radius: 20px;
-        margin: 3rem 0;
+        margin: 2rem 0;
         color: white;
         text-align: center;
         box-shadow: 0 15px 35px rgba(255, 107, 107, 0.3);
@@ -349,40 +290,16 @@ st.markdown(f"""
         overflow: hidden;
     }}
     
-    .inflearn-ad::before {{
-        content: "";
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        background: linear-gradient(45deg, #ff6b6b, #ff8e53, #ff6b6b);
-        border-radius: 20px;
-        z-index: -1;
-        animation: gradient-border 3s linear infinite;
-    }}
-    
-    @keyframes gradient-border {{
-        0% {{ background-position: 0% 50%; }}
-        50% {{ background-position: 100% 50%; }}
-        100% {{ background-position: 0% 50%; }}
-    }}
-    
-    .inflearn-ad:hover {{
-        transform: translateY(-5px);
-        box-shadow: 0 20px 40px rgba(255, 107, 107, 0.4);
-    }}
-    
     .inflearn-button {{
         background: white;
         color: #ff6b6b;
-        padding: 1rem 2.5rem;
+        padding: 0.8rem 2rem;
         border-radius: 30px;
         font-weight: 700;
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         text-decoration: none;
         display: inline-block;
-        margin-top: 1.5rem;
+        margin-top: 1rem;
         transition: all 0.3s ease;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     }}
@@ -395,28 +312,28 @@ st.markdown(f"""
         text-decoration: none;
     }}
     
-    /* 통계 대시보드 */
-    .stats-dashboard {{
-        background: {card_bg};
-        padding: 2rem;
-        border-radius: 15px;
-        margin: 1rem 0;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    /* 통계 정보 */
+    .stats-info {{
+        background: rgba(102, 126, 234, 0.1);
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        text-align: center;
     }}
     
     /* 모바일 반응형 */
     @media (max-width: 768px) {{
         .main-header {{
-            padding: 2rem 1rem;
+            padding: 1.5rem 1rem;
         }}
         .main-header h1 {{
-            font-size: 2rem;
+            font-size: 1.8rem;
         }}
         .content-card {{
             padding: 1.5rem;
         }}
         .problem-card {{
-            padding: 1.5rem;
+            padding: 1rem;
         }}
     }}
     
@@ -431,22 +348,6 @@ st.markdown(f"""
     .stCheckbox > label {{
         color: {text_color};
         font-weight: 500;
-    }}
-    
-    /* 확장 가능한 섹션 */
-    .streamlit-expanderHeader {{
-        background: rgba(102, 126, 234, 0.1);
-        border-radius: 10px;
-        padding: 0.5rem 1rem;
-        font-weight: 600;
-    }}
-    
-    /* 도움말 툴팁 */
-    .help-tooltip {{
-        display: inline-block;
-        margin-left: 0.5rem;
-        color: {secondary_text};
-        cursor: help;
     }}
     
     /* 성공/에러 메시지 개선 */
@@ -470,60 +371,8 @@ st.markdown(f"""
         border-radius: 10px;
         padding: 1rem;
     }}
-    
-    .stInfo {{
-        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
-        border: none;
-        border-radius: 10px;
-        padding: 1rem;
-    }}
 </style>
 """, unsafe_allow_html=True)
-
-# 사이드바 설정
-with st.sidebar:
-    st.markdown("### ⚙️ 설정")
-    
-    # 다크모드 토글
-    dark_mode = st.checkbox("🌙 다크모드", value=st.session_state.dark_mode)
-    if dark_mode != st.session_state.dark_mode:
-        st.session_state.dark_mode = dark_mode
-        st.rerun()
-    
-    st.markdown("---")
-    
-    # API 연결 상태 표시
-    st.markdown("### 🔑 API 상태")
-    
-    if st.session_state.openai_api_key:
-        st.success("✅ API가 연결되어 있습니다")
-        st.info("AI 튜터가 준비되었습니다! 질문을 시작하세요.")
-    else:
-        st.error("❌ API 키가 설정되지 않았습니다")
-        st.warning("GitHub Secrets 또는 환경변수에 OPENAI_API_KEY를 설정해주세요.")
-    
-    st.markdown("---")
-    
-    # 학습 통계
-    st.markdown("### 📊 학습 통계")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("총 질문", f"{st.session_state.total_questions}")
-    with col2:
-        completed = len([v for v in st.session_state.study_progress.values() if v])
-        st.metric("완료 문제", f"{completed}")
-    
-    # 진도율
-    total_problems = 15  # 전체 문제 수
-    progress_rate = completed / total_problems if total_problems > 0 else 0
-    st.markdown(f"""
-    <div class="progress-container">
-        <div class="progress-bar" style="width: {progress_rate * 100}%"></div>
-    </div>
-    <p style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem;">
-        학습 진도: {progress_rate * 100:.1f}%
-    </p>
-    """, unsafe_allow_html=True)
 
 # 기출문제 데이터
 EXAM_DATA = {
@@ -1050,35 +899,12 @@ def problem_selector():
     
     return selected_round, selected_type, selected_problem, problem_data
 
-# 통계 차트 생성
-def create_study_stats():
-    completed = len([v for v in st.session_state.study_progress.values() if v])
-    total = len(EXAM_DATA["8회"]["작업형1"]) + len(EXAM_DATA["8회"]["작업형2"]) + len(EXAM_DATA["8회"]["작업형3"]) + len(EXAM_DATA["9회"]["작업형1"])
-    
-    fig = go.Figure(data=[
-        go.Bar(name='완료', x=['학습 진도'], y=[completed], marker_color='#28a745'),
-        go.Bar(name='미완료', x=['학습 진도'], y=[total - completed], marker_color='#dc3545')
-    ])
-    
-    fig.update_layout(
-        barmode='stack',
-        height=200,
-        margin=dict(l=0, r=0, t=0, b=0),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        showlegend=False,
-        xaxis=dict(showgrid=False, showticklabels=False),
-        yaxis=dict(showgrid=False, title="문제 수")
-    )
-    
-    return fig
-
 # 헤더
 st.markdown("""
 <div class="main-header fade-in">
     <h1><i class="fas fa-graduation-cap"></i> 빅데이터분석기사 실기 Q&A</h1>
     <p><i class="fas fa-robot"></i> AI 튜터와 함께하는 개인 맞춤형 학습 시스템</p>
-    <p style="font-size: 1rem; opacity: 0.9;">
+    <p style="font-size: 0.9rem; opacity: 0.9;">
         <i class="fas fa-star"></i> 기출문제 완벽 분석 | <i class="fas fa-brain"></i> 실시간 AI 답변 | <i class="fas fa-chart-line"></i> 학습 진도 관리
     </p>
 </div>
@@ -1097,242 +923,204 @@ if not st.session_state.openai_api_key:
     </div>
     """, unsafe_allow_html=True)
 
-# 메인 컨텐츠
-col1, col2 = st.columns([1.2, 1])
-
-with col1:
-    # 문제 선택 및 표시
-    st.markdown('<div class="content-card fade-in">', unsafe_allow_html=True)
-    
-    exam_round, problem_type, problem_num, problem_data = problem_selector()
-    
-    st.markdown("---")
-    
-    # 문제 정보 카드
-    st.markdown(f"""
-    <div class="problem-card">
-        <h3><i class="fas fa-bookmark"></i> {exam_round} {problem_type} {problem_num}</h3>
-        <h4 style="color: {secondary_text}; margin: 1rem 0;">📋 {problem_data['제목']}</h4>
-        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-            <span><strong>난이도:</strong> {problem_data['난이도']}</span>
-            <span><strong>핵심 개념:</strong> {', '.join(problem_data['주요개념'])}</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 탭으로 구성
-    tab1, tab2, tab3 = st.tabs(["📋 문제 내용", "💡 해설", "💻 코드"])
-    
-    with tab1:
-        st.markdown(problem_data['내용'])
-    
-    with tab2:
-        st.markdown(problem_data['해설'])
-    
-    with tab3:
-        st.code(problem_data['코드'], language='python')
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with col2:
-    # 채팅 인터페이스
-    st.markdown('<div class="chat-card fade-in">', unsafe_allow_html=True)
-    st.markdown("### 🤖 AI 튜터에게 질문하기")
-    
-    # 채팅 히스토리 표시
-    if st.session_state.chat_history:
-        st.markdown("#### 💬 최근 대화")
-        with st.container():
-            for i, chat in enumerate(st.session_state.chat_history[-3:]):
-                with st.expander(f"Q{len(st.session_state.chat_history)-2+i}: {chat['question'][:30]}..."):
-                    st.markdown(f"**👤 질문:** {chat['question']}")
-                    st.markdown(f"""
-                    <div class="ai-response">
-                        <strong>🤖 AI 답변:</strong><br>
-                        {chat['answer']}
-                    </div>
-                    """, unsafe_allow_html=True)
-    
-    # 질문 입력
-    question = st.text_area(
-        "궁금한 점을 자유롭게 질문하세요:",
-        placeholder="예시:\n- 이 문제에서 groupby는 어떻게 작동하나요?\n- Min-Max 스케일링의 장단점은?\n- 다른 해결 방법도 있을까요?",
-        height=120,
-        key="question_input"
-    )
-    
-    # 질문 버튼
-    col_btn1, col_btn2 = st.columns([2, 1])
-    with col_btn1:
-        ask_button = st.button("🚀 질문하기", type="primary", use_container_width=True)
-    with col_btn2:
-        clear_button = st.button("🗑️ 기록 삭제", use_container_width=True)
-    
-    if clear_button:
-        st.session_state.chat_history = []
-        st.success("대화 기록이 삭제되었습니다!")
-        time.sleep(1)
-        st.rerun()
-    
-    if ask_button and question.strip():
-        if st.session_state.openai_api_key:
-            with st.spinner("🤔 AI가 답변을 생각하고 있어요..."):
-                # 컨텍스트 정보 구성
-                context = f"""
-                문제: {exam_round} {problem_type} {problem_num} - {problem_data['제목']}
-                난이도: {problem_data['난이도']}
-                주요개념: {', '.join(problem_data['주요개념'])}
-                내용: {problem_data['내용']}
-                해설: {problem_data['해설']}
-                코드: {problem_data['코드']}
-                """
-                
-                # ChatGPT 응답 받기
-                response = get_chatgpt_response(question, context, st.session_state.chat_history)
-                
-                # 채팅 기록에 추가
-                st.session_state.chat_history.append({
-                    "question": question,
-                    "answer": response,
-                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "problem": f"{exam_round} {problem_type} {problem_num}"
-                })
-                
-                st.session_state.total_questions += 1
-                
-                # 응답 표시
-                st.markdown("#### 💡 AI 답변")
-                st.markdown(f"""
-                <div class="ai-response fade-in">
-                    {response}
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.warning("AI 답변을 받으려면 API 키가 필요합니다!")
-    
-    elif ask_button:
-        st.warning("질문을 입력해주세요!")
-    
-    # 퀵 질문 버튼들
-    st.markdown("#### ⚡ 빠른 질문")
-    quick_questions = [
-        "이 문제의 핵심 개념은?",
-        "다른 해결 방법은?",
-        "실무에서는 어떻게 활용?",
-        "비슷한 문제 유형은?"
-    ]
-    
-    cols = st.columns(2)
-    for i, q in enumerate(quick_questions):
-        with cols[i % 2]:
-            if st.button(q, key=f"quick_{i}", use_container_width=True):
-                st.session_state.question_input = q
-                st.rerun()
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# 학습 통계 대시보드
-st.markdown("---")
-st.markdown("### 📊 학습 대시보드")
-
+# 상단 통계 정보
 col1, col2, col3, col4 = st.columns(4)
+completed = len([v for v in st.session_state.study_progress.values() if v])
+total_problems = 15
+progress_rate = completed / total_problems if total_problems > 0 else 0
 
 with col1:
     st.markdown(f"""
     <div class="metric-card fade-in">
-        <i class="fas fa-question-circle" style="color: #667eea; font-size: 2rem;"></i>
+        <i class="fas fa-question-circle" style="color: #667eea; font-size: 1.5rem;"></i>
         <h3 style="margin: 0.5rem 0; color: {secondary_text};">{st.session_state.total_questions}</h3>
-        <p style="margin: 0;">총 질문 수</p>
+        <p style="margin: 0; font-size: 0.9rem;">총 질문 수</p>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
-    completed = len([v for v in st.session_state.study_progress.values() if v])
     st.markdown(f"""
     <div class="metric-card fade-in">
-        <i class="fas fa-check-circle" style="color: #28a745; font-size: 2rem;"></i>
+        <i class="fas fa-check-circle" style="color: #28a745; font-size: 1.5rem;"></i>
         <h3 style="margin: 0.5rem 0; color: #28a745;">{completed}</h3>
-        <p style="margin: 0;">완료 문제</p>
+        <p style="margin: 0; font-size: 0.9rem;">완료 문제</p>
     </div>
     """, unsafe_allow_html=True)
 
 with col3:
-    total_problems = 15
-    progress_rate = completed / total_problems if total_problems > 0 else 0
     st.markdown(f"""
     <div class="metric-card fade-in">
-        <i class="fas fa-chart-line" style="color: #ffc107; font-size: 2rem;"></i>
+        <i class="fas fa-chart-line" style="color: #ffc107; font-size: 1.5rem;"></i>
         <h3 style="margin: 0.5rem 0; color: #ffc107;">{progress_rate * 100:.0f}%</h3>
-        <p style="margin: 0;">진도율</p>
+        <p style="margin: 0; font-size: 0.9rem;">진도율</p>
     </div>
     """, unsafe_allow_html=True)
 
 with col4:
     st.markdown(f"""
     <div class="metric-card fade-in">
-        <i class="fas fa-brain" style="color: #e91e63; font-size: 2rem;"></i>
-        <h3 style="margin: 0.5rem 0; color: #e91e63;">AI</h3>
-        <p style="margin: 0;">튜터 모드</p>
+        <i class="fas fa-robot" style="color: #e91e63; font-size: 1.5rem;"></i>
+        <h3 style="margin: 0.5rem 0; color: #e91e63;">{"ON" if st.session_state.openai_api_key else "OFF"}</h3>
+        <p style="margin: 0; font-size: 0.9rem;">AI 상태</p>
     </div>
     """, unsafe_allow_html=True)
 
-# 인프런 강의 광고
+# 메인 컨텐츠 - 문제 선택 섹션
+st.markdown('<div class="content-card fade-in">', unsafe_allow_html=True)
+exam_round, problem_type, problem_num, problem_data = problem_selector()
+
 st.markdown("---")
-st.markdown("""
-<div class="inflearn-ad fade-in">
-    <div style="position: relative; z-index: 1;">
-        <h2 style="margin-bottom: 1rem; font-size: 2.5rem;">
-            <i class="fas fa-graduation-cap"></i> 더 깊이 있는 학습을 원하신다면?
-        </h2>
-        <p style="font-size: 1.4rem; margin-bottom: 1rem; opacity: 0.95;">
-            <strong>빅데이터분석기사 실기 완전정복 과정</strong>
-        </p>
-        <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">
-            ✅ 8회~최신회차 기출문제 완벽 분석<br>
-            ✅ 실무 중심의 문제 해결 전략<br>
-            ✅ 1:1 질문 답변 및 피드백<br>
-            ✅ 합격까지 완벽 가이드
-        </p>
-        <a href="https://inf.run/ZRXQe" target="_blank" class="inflearn-button">
-            <i class="fas fa-play-circle"></i> 인프런에서 수강하기
-        </a>
-        <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
-            🎯 지금 바로 시작하여 빅분기 합격의 꿈을 이루세요!
-        </p>
+
+# 문제 정보 카드
+st.markdown(f"""
+<div class="problem-card">
+    <h3><i class="fas fa-bookmark"></i> {exam_round} {problem_type} {problem_num}</h3>
+    <h4 style="color: {secondary_text}; margin: 1rem 0;">📋 {problem_data['제목']}</h4>
+    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+        <span><strong>난이도:</strong> {problem_data['난이도']}</span>
+        <span><strong>핵심 개념:</strong> {', '.join(problem_data['주요개념'])}</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# 시스템 정보 및 도움말
-st.markdown("---")
-col1, col2, col3 = st.columns(3)
+# 탭으로 구성
+tab1, tab2, tab3 = st.tabs(["📋 문제 내용", "💡 해설", "💻 코드"])
 
-with col1:
-    st.markdown("""
-    <div class="metric-card fade-in">
-        <i class="fas fa-robot" style="color: #667eea; font-size: 2rem;"></i>
-        <h4 style="margin: 1rem 0; color: {text_color};">AI 기반 학습</h4>
-        <p style="margin: 0; font-size: 0.9rem;">ChatGPT 연동으로<br>실시간 질문 답변</p>
-    </div>
-    """.format(text_color=text_color), unsafe_allow_html=True)
+with tab1:
+    st.markdown(problem_data['내용'])
 
-with col2:
-    st.markdown("""
-    <div class="metric-card fade-in">
-        <i class="fas fa-book-open" style="color: #28a745; font-size: 2rem;"></i>
-        <h4 style="margin: 1rem 0; color: {text_color};">완벽한 기출분석</h4>
-        <p style="margin: 0; font-size: 0.9rem;">8~9회 기출문제<br>상세 해설 포함</p>
-    </div>
-    """.format(text_color=text_color), unsafe_allow_html=True)
+with tab2:
+    st.markdown(problem_data['해설'])
 
-with col3:
-    st.markdown("""
-    <div class="metric-card fade-in">
-        <i class="fas fa-chart-bar" style="color: #dc3545; font-size: 2rem;"></i>
-        <h4 style="margin: 1rem 0; color: {text_color};">진도 관리</h4>
-        <p style="margin: 0; font-size: 0.9rem;">개인별 학습 진도<br>체계적 관리</p>
+with tab3:
+    st.code(problem_data['코드'], language='python')
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# AI 튜터 섹션
+st.markdown('<div class="chat-card fade-in">', unsafe_allow_html=True)
+st.markdown("### 🤖 AI 튜터에게 질문하기")
+
+# 채팅 히스토리 표시
+if st.session_state.chat_history:
+    st.markdown("#### 💬 최근 대화")
+    with st.container():
+        for i, chat in enumerate(st.session_state.chat_history[-3:]):
+            with st.expander(f"Q{len(st.session_state.chat_history)-2+i}: {chat['question'][:30]}..."):
+                st.markdown(f"**👤 질문:** {chat['question']}")
+                st.markdown(f"""
+                <div class="ai-response">
+                    <strong>🤖 AI 답변:</strong><br>
+                    {chat['answer']}
+                </div>
+                """, unsafe_allow_html=True)
+
+# 퀵 질문 선택 확인
+if 'selected_quick_question' in st.session_state and st.session_state.selected_quick_question:
+    default_question = st.session_state.selected_quick_question
+    st.session_state.selected_quick_question = None  # 사용 후 초기화
+else:
+    default_question = ""
+
+# 질문 입력
+question = st.text_area(
+    "궁금한 점을 자유롭게 질문하세요:",
+    placeholder="예시:\n- 이 문제에서 groupby는 어떻게 작동하나요?\n- Min-Max 스케일링의 장단점은?\n- 다른 해결 방법도 있을까요?",
+    height=120,
+    value=default_question,
+    key="question_input"
+)
+
+# 질문 버튼
+col_btn1, col_btn2 = st.columns([2, 1])
+with col_btn1:
+    ask_button = st.button("🚀 질문하기", type="primary", use_container_width=True)
+with col_btn2:
+    clear_button = st.button("🗑️ 기록 삭제", use_container_width=True)
+
+if clear_button:
+    st.session_state.chat_history = []
+    st.success("대화 기록이 삭제되었습니다!")
+    time.sleep(1)
+    st.rerun()
+
+if ask_button and question.strip():
+    if st.session_state.openai_api_key:
+        with st.spinner("🤔 AI가 답변을 생각하고 있어요..."):
+            # 컨텍스트 정보 구성
+            context = f"""
+            문제: {exam_round} {problem_type} {problem_num} - {problem_data['제목']}
+            난이도: {problem_data['난이도']}
+            주요개념: {', '.join(problem_data['주요개념'])}
+            내용: {problem_data['내용']}
+            해설: {problem_data['해설']}
+            코드: {problem_data['코드']}
+            """
+            
+            # ChatGPT 응답 받기
+            response = get_chatgpt_response(question, context, st.session_state.chat_history)
+            
+            # 채팅 기록에 추가
+            st.session_state.chat_history.append({
+                "question": question,
+                "answer": response,
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "problem": f"{exam_round} {problem_type} {problem_num}"
+            })
+            
+            st.session_state.total_questions += 1
+            
+            # 응답 표시
+            st.markdown("#### 💡 AI 답변")
+            st.markdown(f"""
+            <div class="ai-response fade-in">
+                {response}
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.warning("AI 답변을 받으려면 API 키가 필요합니다!")
+
+elif ask_button:
+    st.warning("질문을 입력해주세요!")
+
+# 퀵 질문 버튼들
+st.markdown("#### ⚡ 빠른 질문")
+quick_questions = [
+    "이 문제의 핵심 개념은?",
+    "다른 해결 방법은?",
+    "실무에서는 어떻게 활용?",
+    "비슷한 문제 유형은?"
+]
+
+cols = st.columns(2)
+for i, q in enumerate(quick_questions):
+    with cols[i % 2]:
+        if st.button(q, key=f"quick_{i}", use_container_width=True):
+            st.session_state.selected_quick_question = q
+            st.rerun()
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# 인프런 강의 광고
+st.markdown("""
+<div class="inflearn-ad fade-in">
+    <div style="position: relative; z-index: 1;">
+        <h2 style="margin-bottom: 1rem; font-size: 2rem;">
+            <i class="fas fa-graduation-cap"></i> 더 깊이 있는 학습을 원하신다면?
+        </h2>
+        <p style="font-size: 1.2rem; margin-bottom: 0.5rem; opacity: 0.95;">
+            <strong>빅데이터분석기사 실기 완전정복 과정</strong>
+        </p>
+        <p style="font-size: 1rem; margin-bottom: 1.5rem; opacity: 0.9;">
+            ✅ 8회~최신회차 기출문제 완벽 분석 | ✅ 실무 중심의 문제 해결 전략<br>
+            ✅ 1:1 질문 답변 및 피드백 | ✅ 합격까지 완벽 가이드
+        </p>
+        <a href="https://inf.run/ZRXQe" target="_blank" class="inflearn-button">
+            <i class="fas fa-play-circle"></i> 인프런에서 수강하기
+        </a>
     </div>
-    """.format(text_color=text_color), unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
 # 하단 정보
 current_date = datetime.now().strftime('%Y년 %m월 %d일')
