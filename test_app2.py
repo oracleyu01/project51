@@ -1,7 +1,3 @@
-```python
-"""
-직업군 장단점 분석 앱 - LangGraph 버전
-"""
 
 import streamlit as st
 
