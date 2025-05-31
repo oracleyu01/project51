@@ -1,3 +1,7 @@
+```python
+"""
+직업군 장단점 분석 앱 - LangGraph 버전
+"""
 
 import streamlit as st
 
@@ -29,6 +33,7 @@ from collections import Counter
 import io
 import base64
 import urllib.request
+import urllib.parse
 
 # LangGraph 관련
 from typing import TypedDict, Annotated, List, Union, Dict
@@ -112,6 +117,7 @@ else:
     header_gradient = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
 
 st.markdown(f"""
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
     /* 전체 배경 및 기본 스타일 */
     .stApp {{
@@ -432,6 +438,27 @@ st.markdown(f"""
         border: none;
         box-shadow: 0 5px 15px rgba(33, 150, 243, 0.1);
     }}
+    
+    /* 채용 공고 카드 호버 효과 */
+    .job-posting-card {{
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }}
+    
+    .job-posting-card:hover {{
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }}
+    
+    /* 지원하기 버튼 호버 효과 */
+    .apply-button {{
+        transition: all 0.3s ease;
+    }}
+    
+    .apply-button:hover {{
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -480,6 +507,7 @@ class CareerState(TypedDict):
     sources: List[dict]
     salary_info: dict
     career_path: List[str]
+    job_postings: List[dict]  # 채용 공고 추가
     messages: Annotated[List[Union[HumanMessage, AIMessage]], operator.add]
     error: str
 
@@ -528,6 +556,70 @@ class CareerInfoCrawler:
                 "query": search_query,
                 "display": 10,
                 "sort": "sim"
+            },
+            "자바 개발자": {
+                "pros": [
+                    "안정적인 기술 스택",
+                    "대기업과 금융권 수요 높음",
+                    "체계적인 개발 프로세스",
+                    "풍부한 레퍼런스와 커뮤니티",
+                    "Spring 생태계의 강력함"
+                ],
+                "cons": [
+                    "레거시 시스템 유지보수",
+                    "보수적인 기술 환경",
+                    "긴 빌드 시간",
+                    "무거운 프레임워크",
+                    "최신 기술 도입 어려움"
+                ]
+            },
+            "DBA": {
+                "pros": [
+                    "안정적인 직무로 수요가 꾸준함",
+                    "기술의 변화가 상대적으로 느림",
+                    "높은 전문성으로 대체 불가능",
+                    "체계적인 업무 프로세스",
+                    "금융, 대기업 등 안정적인 직장"
+                ],
+                "cons": [
+                    "24시간 온콜 대응 부담",
+                    "장애 발생 시 큰 책임감",
+                    "반복적인 모니터링 업무",
+                    "새로운 기술 도입이 보수적",
+                    "야간 작업이 잦음"
+                ]
+            },
+            "DB 엔지니어": {
+                "pros": [
+                    "데이터 모델링의 창의성",
+                    "성능 튜닝의 성취감",
+                    "개발과 운영의 균형잡힌 역할",
+                    "다양한 프로젝트 경험 가능",
+                    "백엔드 개발로 전환 용이"
+                ],
+                "cons": [
+                    "복잡한 쿼리 최적화 압박",
+                    "레거시 DB 마이그레이션 스트레스",
+                    "다양한 DBMS 학습 부담",
+                    "개발팀과 운영팀 사이의 갈등",
+                    "성능 이슈에 대한 책임"
+                ]
+            },
+            "AI 엔지니어": {
+                "pros": [
+                    "최신 기술을 실제 서비스에 적용",
+                    "높은 연봉과 대우",
+                    "MLOps 분야의 성장 가능성",
+                    "다양한 AI 모델 경험",
+                    "글로벌 기업 진출 기회"
+                ],
+                "cons": [
+                    "복잡한 인프라 관리",
+                    "높은 컴퓨팅 비용 부담",
+                    "모델과 시스템 양쪽 지식 필요",
+                    "실시간 서빙의 기술적 난이도",
+                    "빠른 기술 변화 속도"
+                ]
             }
             
             try:
@@ -691,7 +783,23 @@ class CareerInfoCrawler:
             "DBA": {"min": 4500, "avg": 7000, "max": 11000},
             "DB 엔지니어": {"min": 4500, "avg": 6500, "max": 10000},
             "AI 개발자": {"min": 5500, "avg": 8000, "max": 15000},
-            "AI 엔지니어": {"min": 6000, "avg": 9000, "max": 18000},
+            "AI 엔지니어": {"min": 6000, "avg": 9000, "max": 18000            },
+            "데이터 엔지니어": {
+                "pros": [
+                    "높은 수요와 좋은 처우",
+                    "대용량 데이터 처리의 성취감",
+                    "클라우드 기술 전문성 확보",
+                    "데이터 기반 의사결정의 핵심 역할",
+                    "다양한 도메인 경험 가능"
+                ],
+                "cons": [
+                    "24/7 파이프라인 모니터링",
+                    "복잡한 기술 스택 관리",
+                    "데이터 품질 이슈 대응",
+                    "가시적 성과 부족",
+                    "지속적인 최적화 압박"
+                ]
+            },
             "자바 개발자": {"min": 4000, "avg": 6000, "max": 10000},
             "백엔드 개발자": {"min": 4500, "avg": 6500, "max": 11000}
         }
@@ -705,26 +813,116 @@ class CareerInfoCrawler:
         
         return default_salary
     
-    def get_career_path(self, career_name):
-        """경력 개발 경로 제공 (샘플)"""
-        sample_paths = {
-            "데이터 분석가": ["주니어 분석가", "분석가", "시니어 분석가", "리드 분석가", "데이터 팀장", "CDO"],
-            "데이터 엔지니어": ["주니어 엔지니어", "엔지니어", "시니어 엔지니어", "리드 엔지니어", "데이터 아키텍트", "CTO"],
-            "DBA": ["주니어 DBA", "DBA", "시니어 DBA", "DB 팀장", "DB 아키텍트", "CTO"],
-            "DB 엔지니어": ["주니어 엔지니어", "DB 엔지니어", "시니어 엔지니어", "DB 아키텍트", "솔루션 아키텍트"],
-            "AI 개발자": ["주니어 개발자", "AI 개발자", "시니어 개발자", "AI 리드", "AI 팀장", "CTO"],
-            "AI 엔지니어": ["주니어 엔지니어", "AI 엔지니어", "시니어 엔지니어", "MLOps 리드", "AI 플랫폼 팀장"],
-            "자바 개발자": ["주니어 개발자", "개발자", "시니어 개발자", "테크 리드", "개발 팀장", "CTO"],
-            "백엔드 개발자": ["주니어 개발자", "개발자", "시니어 개발자", "테크 리드", "백엔드 팀장", "CTO"]
-        }
+    def get_realtime_job_postings(self, career_name):
+        """실시간 채용 공고 크롤링"""
+        import urllib.parse
         
-        default_path = ["신입", "경력 3년차", "경력 5년차", "팀장급", "임원급"]
+        # 검색어 생성 (신입, 경력 1-2년)
+        search_keywords = [
+            f"{career_name} 신입",
+            f"{career_name} 주니어",
+            f"{career_name} 경력 1년",
+            f"{career_name} 경력 2년"
+        ]
         
-        for key, value in sample_paths.items():
-            if key in career_name:
-                return value
+        all_postings = []
         
-        return default_path
+        try:
+            # 네이버 검색으로 채용 정보 수집
+            for keyword in search_keywords[:2]:  # API 호출 제한으로 2개만
+                encoded_query = urllib.parse.quote(f"{keyword} 채용")
+                url = "https://openapi.naver.com/v1/search/webkr.json"
+                
+                params = {
+                    "query": encoded_query,
+                    "display": 10,
+                    "sort": "date"  # 최신순
+                }
+                
+                response = requests.get(url, headers=self.naver_headers, params=params)
+                
+                if response.status_code == 200:
+                    results = response.json()
+                    
+                    for item in results.get('items', []):
+                        title = self.remove_html_tags(item.get('title', ''))
+                        description = self.remove_html_tags(item.get('description', ''))
+                        link = item.get('link', '')
+                        
+                        # 채용 관련 키워드 확인
+                        if any(word in title + description for word in ['채용', '모집', '구인', 'hiring', 'recruit']):
+                            # 회사명 추출 시도
+                            company = ""
+                            for corp_indicator in ['(주)', '㈜', '주식회사', 'Corp', 'Inc', 'Ltd']:
+                                if corp_indicator in title:
+                                    parts = title.split(corp_indicator)
+                                    if parts:
+                                        company = parts[0].strip() + corp_indicator
+                                        break
+                            
+                            if not company:
+                                # 제목에서 첫 단어를 회사명으로 추정
+                                company = title.split()[0] if title.split() else "기업"
+                            
+                            # 연봉 정보 추출 시도
+                            salary = "회사 내규"
+                            salary_patterns = [
+                                r'(\d{3,4})\s*만\s*원',
+                                r'(\d{3,4})\s*만원',
+                                r'(\d{3,4})\s*~\s*(\d{3,4})',
+                                r'연봉\s*(\d{3,4})'
+                            ]
+                            
+                            for pattern in salary_patterns:
+                                match = re.search(pattern, description)
+                                if match:
+                                    if match.lastindex == 2:  # 범위인 경우
+                                        salary = f"{match.group(1)}~{match.group(2)}만원"
+                                    else:
+                                        salary = f"{match.group(1)}만원~"
+                                    break
+                            
+                            # 위치 정보 추출
+                            location = "서울"
+                            locations = ['강남', '판교', '분당', '여의도', '구로', '가산', '상암', '을지로', '종로', '마포']
+                            for loc in locations:
+                                if loc in description:
+                                    location = loc
+                                    break
+                            
+                            posting = {
+                                "company": company[:20],  # 회사명 길이 제한
+                                "title": title[:50],
+                                "description": description[:200],
+                                "link": link,
+                                "salary": salary,
+                                "location": location,
+                                "type": "정규직",
+                                "requirements": []
+                            }
+                            
+                            # 요구사항 추출
+                            req_keywords = ['경험', '능력', '우대', '필수', '자격', '조건']
+                            req_sentences = [sent for sent in description.split('.') 
+                                           if any(kw in sent for kw in req_keywords)]
+                            posting["requirements"] = req_sentences[:3]
+                            
+                            all_postings.append(posting)
+                
+                time.sleep(0.5)  # API 호출 제한
+                
+        except Exception as e:
+            print(f"채용 정보 크롤링 오류: {e}")
+        
+        # 중복 제거 및 정렬
+        seen_companies = set()
+        unique_postings = []
+        for posting in all_postings:
+            if posting["company"] not in seen_companies and len(unique_postings) < 5:
+                seen_companies.add(posting["company"])
+                unique_postings.append(posting)
+        
+        return unique_postings
 
 # ========================
 # 유틸리티 함수들
@@ -1131,6 +1329,22 @@ def crawl_web(state: CareerState) -> CareerState:
                     "지속적인 기술 부채 관리 필요",
                     "디버깅과 트러블슈팅에 많은 시간 소요"
                 ]
+            },
+            "자바 개발자": {
+                "pros": [
+                    "안정적인 기술 스택",
+                    "대기업과 금융권 수요 높음",
+                    "체계적인 개발 프로세스",
+                    "풍부한 레퍼런스와 커뮤니티",
+                    "Spring 생태계의 강력함"
+                ],
+                "cons": [
+                    "레거시 시스템 유지보수",
+                    "보수적인 기술 환경",
+                    "긴 빌드 시간",
+                    "무거운 프레임워크",
+                    "최신 기술 도입 어려움"
+                ]
             }
         }
         
@@ -1163,6 +1377,30 @@ def crawl_web(state: CareerState) -> CareerState:
         state["cons"] = career_data["cons"]
         state["salary_info"] = crawler.get_career_salary_info(career_name)
         state["career_path"] = crawler.get_career_path(career_name)
+        
+        # 샘플 채용 공고 (API 키가 없을 때)
+        state["job_postings"] = [
+            {
+                "company": "네이버",
+                "title": f"{career_name} 신입 채용 (2025년 상반기)",
+                "description": f"{career_name} 포지션에서 함께 성장할 인재를 찾습니다. 신입 및 경력 1-2년 지원 가능.",
+                "link": f"https://www.saramin.co.kr/zf_user/search?searchType=search&searchword={urllib.parse.quote(career_name)}",
+                "salary": "신입 기준 4,000만원~",
+                "location": "판교",
+                "type": "정규직",
+                "source": "saramin.co.kr"
+            },
+            {
+                "company": "카카오",
+                "title": f"주니어 {career_name} 모집",
+                "description": "카카오와 함께 세상을 변화시킬 주니어 개발자를 모집합니다.",
+                "link": f"https://www.wanted.co.kr/search?query={urllib.parse.quote(career_name)}",
+                "salary": "협의",
+                "location": "판교",
+                "type": "정규직",
+                "source": "wanted.co.kr"
+            }
+        ]
         
         state["messages"].append(
             AIMessage(content="📌 샘플 데이터를 표시합니다 (API 키 설정 필요)")
@@ -1223,6 +1461,12 @@ def crawl_web(state: CareerState) -> CareerState:
     state["salary_info"] = crawler.get_career_salary_info(career_name)
     state["career_path"] = crawler.get_career_path(career_name)
     
+    # 실시간 채용 정보 가져오기
+    try:
+        state["job_postings"] = crawler.get_realtime_job_postings(career_name)
+    except:
+        state["job_postings"] = []
+    
     if state["pros"] or state["cons"]:
         state["messages"].append(
             AIMessage(content=f"🎉 웹 크롤링 완료! 총 장점 {len(state['pros'])}개, 단점 {len(state['cons'])}개 수집")
@@ -1279,6 +1523,11 @@ def process_results(state: CareerState) -> CareerState:
         if crawler:
             state["salary_info"] = crawler.get_career_salary_info(state["career_name"])
             state["career_path"] = crawler.get_career_path(state["career_name"])
+            # 실시간 채용 정보
+            try:
+                state["job_postings"] = crawler.get_realtime_job_postings(state["career_name"])
+            except:
+                state["job_postings"] = []
         
         state["messages"].append(
             AIMessage(content=f"📋 결과 정리 완료: 장점 {len(state['pros'])}개, 단점 {len(state['cons'])}개")
@@ -1418,6 +1667,7 @@ if search_button:
             "sources": [],
             "salary_info": {},
             "career_path": [],
+            "job_postings": [],
             "messages": [],
             "error": ""
         }
@@ -1662,9 +1912,169 @@ if search_button:
                     </div>
                     """, unsafe_allow_html=True)
             
-            # 추가 인사이트
+            # 실시간 채용 공고 섹션
             st.markdown("---")
-            st.markdown("### 💡 직업 인사이트")
+            st.markdown("### 💼 실시간 채용 공고")
+            
+            # 직업별 맞춤 인사이트
+            career_insights = {
+                "데이터 분석가": {
+                    "suitable_for": [
+                        "논리적이고 분석적인 사고를 좋아하는 사람",
+                        "숫자와 통계에 관심이 많은 사람",
+                        "비즈니스 인사이트 도출에 흥미가 있는 사람",
+                        "새로운 도구와 기술 학습을 즐기는 사람",
+                        "커뮤니케이션 능력이 뛰어난 사람"
+                    ],
+                    "considerations": [
+                        "반복적인 리포트 작업에 대한 인내심 필요",
+                        "비즈니스와 기술 양쪽 역량이 모두 필요함",
+                        "데이터 품질 이슈로 인한 스트레스 관리 필요",
+                        "끊임없는 기술 변화에 대한 적응력 필요",
+                        "성과를 정량화하기 어려운 경우가 많음"
+                    ]
+                },
+                "데이터 엔지니어": {
+                    "suitable_for": [
+                        "대용량 데이터 처리에 관심이 있는 사람",
+                        "시스템 설계와 아키텍처를 좋아하는 사람",
+                        "자동화와 효율성을 추구하는 사람",
+                        "문제 해결 능력이 뛰어난 사람",
+                        "백엔드 기술에 흥미가 있는 사람"
+                    ],
+                    "considerations": [
+                        "24/7 데이터 파이프라인 관리 부담",
+                        "장애 대응을 위한 온콜 근무 가능성",
+                        "복잡한 기술 스택 학습 필요",
+                        "가시적 성과가 잘 드러나지 않을 수 있음",
+                        "지속적인 시스템 모니터링 스트레스"
+                    ]
+                },
+                "DBA": {
+                    "suitable_for": [
+                        "안정성과 신뢰성을 중시하는 사람",
+                        "세심하고 꼼꼼한 성격의 사람",
+                        "위기 상황 대처 능력이 좋은 사람",
+                        "체계적인 업무 처리를 선호하는 사람",
+                        "인프라 운영에 관심이 있는 사람"
+                    ],
+                    "considerations": [
+                        "24/7 장애 대응 준비 필요",
+                        "실수에 대한 심리적 부담감이 큼",
+                        "야간 및 주말 작업 가능성",
+                        "새로운 기술보다 안정성 우선시",
+                        "반복적인 모니터링 업무의 지루함"
+                    ]
+                },
+                "DB 엔지니어": {
+                    "suitable_for": [
+                        "데이터 모델링에 흥미가 있는 사람",
+                        "성능 최적화를 즐기는 사람",
+                        "논리적 사고력이 뛰어난 사람",
+                        "세부사항에 주의를 기울이는 사람",
+                        "백엔드 개발에 관심이 있는 사람"
+                    ],
+                    "considerations": [
+                        "복잡한 쿼리 최적화에 대한 압박",
+                        "레거시 시스템 마이그레이션 스트레스",
+                        "다양한 DB 기술 학습 부담",
+                        "개발팀과의 지속적인 협업 필요",
+                        "성능 이슈에 대한 책임감"
+                    ]
+                },
+                "AI 개발자": {
+                    "suitable_for": [
+                        "수학과 통계에 강한 사람",
+                        "연구와 실험을 좋아하는 사람",
+                        "최신 기술 트렌드에 민감한 사람",
+                        "창의적 문제 해결을 즐기는 사람",
+                        "지속적인 학습에 열정이 있는 사람"
+                    ],
+                    "considerations": [
+                        "빠른 기술 변화에 대한 학습 압박",
+                        "모델 성능 개선에 대한 지속적 요구",
+                        "높은 컴퓨팅 리소스 비용 문제",
+                        "설명 가능한 AI에 대한 고민 필요",
+                        "경쟁이 매우 치열한 분야"
+                    ]
+                },
+                "AI 엔지니어": {
+                    "suitable_for": [
+                        "시스템 최적화에 관심이 많은 사람",
+                        "MLOps와 인프라를 좋아하는 사람",
+                        "실시간 처리 시스템에 흥미가 있는 사람",
+                        "대규모 시스템 운영 경험을 원하는 사람",
+                        "DevOps 문화를 선호하는 사람"
+                    ],
+                    "considerations": [
+                        "모델 서빙 인프라 관리 복잡성",
+                        "GPU 클러스터 운영 비용 부담",
+                        "모델 버전 관리의 어려움",
+                        "실시간 추론 성능 보장 압박",
+                        "다양한 프레임워크 호환성 문제"
+                    ]
+                },
+                "자바 개발자": {
+                    "suitable_for": [
+                        "안정적인 기술 스택을 선호하는 사람",
+                        "대규모 엔터프라이즈 환경을 원하는 사람",
+                        "체계적인 개발 프로세스를 좋아하는 사람",
+                        "Spring 생태계에 관심이 있는 사람",
+                        "금융/공공 도메인에 관심이 있는 사람"
+                    ],
+                    "considerations": [
+                        "레거시 시스템 유지보수 부담",
+                        "보수적인 기술 스택의 한계",
+                        "긴 빌드 시간과 무거운 프레임워크",
+                        "엔터프라이즈 환경의 경직성",
+                        "최신 기술 도입의 어려움"
+                    ]
+                },
+                "백엔드 개발자": {
+                    "suitable_for": [
+                        "서버 사이드 로직에 흥미가 있는 사람",
+                        "시스템 설계와 아키텍처를 좋아하는 사람",
+                        "API 설계에 관심이 많은 사람",
+                        "성능 최적화를 즐기는 사람",
+                        "다양한 기술 스택을 경험하고 싶은 사람"
+                    ],
+                    "considerations": [
+                        "24/7 서비스 운영에 대한 부담",
+                        "프론트엔드 대비 가시성 부족",
+                        "복잡한 비즈니스 로직 관리",
+                        "레거시 코드 리팩토링 압박",
+                        "지속적인 기술 부채 해결 필요"
+                    ]
+                }
+            }
+            
+            # 현재 직업에 맞는 인사이트 찾기
+            current_insights = {"suitable_for": [], "considerations": []}
+            career_lower = final_state["career_name"].lower()
+            
+            for job_key, insights in career_insights.items():
+                if job_key.lower() in career_lower or career_lower in job_key.lower():
+                    current_insights = insights
+                    break
+            
+            # 기본 인사이트 (매칭되는 직업이 없을 경우)
+            if not current_insights["suitable_for"]:
+                current_insights = {
+                    "suitable_for": [
+                        "해당 분야에 열정이 있는 사람",
+                        "지속적인 학습을 즐기는 사람",
+                        "문제 해결 능력이 뛰어난 사람",
+                        "팀워크를 중시하는 사람",
+                        "책임감이 강한 사람"
+                    ],
+                    "considerations": [
+                        "업무에 대한 전문성 개발 필요",
+                        "지속적인 자기계발 요구",
+                        "업무 스트레스 관리 능력 필요",
+                        "워라밸 유지를 위한 노력 필요",
+                        "경력 개발 계획 수립 필요"
+                    ]
+                }
             
             col1, col2 = st.columns(2)
             
@@ -1677,15 +2087,8 @@ if search_button:
                     <ul style="margin: 0; padding-left: 1.5rem;">
                 """, unsafe_allow_html=True)
                 
-                # 장점을 기반으로 적합한 사람 특성 추출
-                if "안정" in ' '.join(final_state["pros"]):
-                    st.markdown("<li>안정적인 삶을 추구하는 사람</li>", unsafe_allow_html=True)
-                if "창의" in ' '.join(final_state["pros"]) or "창조" in ' '.join(final_state["pros"]):
-                    st.markdown("<li>창의적인 일을 좋아하는 사람</li>", unsafe_allow_html=True)
-                if "높은 연봉" in ' '.join(final_state["pros"]) or "고수입" in ' '.join(final_state["pros"]):
-                    st.markdown("<li>경제적 보상을 중시하는 사람</li>", unsafe_allow_html=True)
-                if "보람" in ' '.join(final_state["pros"]):
-                    st.markdown("<li>사회적 기여를 중요시하는 사람</li>", unsafe_allow_html=True)
+                for suitable in current_insights["suitable_for"]:
+                    st.markdown(f"<li>{suitable}</li>", unsafe_allow_html=True)
                 
                 st.markdown("</ul></div>", unsafe_allow_html=True)
             
@@ -1698,25 +2101,21 @@ if search_button:
                     <ul style="margin: 0; padding-left: 1.5rem;">
                 """, unsafe_allow_html=True)
                 
-                # 단점을 기반으로 고려사항 추출
-                if "스트레스" in ' '.join(final_state["cons"]):
-                    st.markdown("<li>스트레스 관리 능력이 필요함</li>", unsafe_allow_html=True)
-                if "야근" in ' '.join(final_state["cons"]) or "워라밸" in ' '.join(final_state["cons"]):
-                    st.markdown("<li>개인 시간 확보가 어려울 수 있음</li>", unsafe_allow_html=True)
-                if "경쟁" in ' '.join(final_state["cons"]):
-                    st.markdown("<li>경쟁이 치열한 환경임</li>", unsafe_allow_html=True)
-                if "체력" in ' '.join(final_state["cons"]) or "건강" in ' '.join(final_state["cons"]):
-                    st.markdown("<li>체력 관리가 중요함</li>", unsafe_allow_html=True)
+                for consideration in current_insights["considerations"]:
+                    st.markdown(f"<li>{consideration}</li>", unsafe_allow_html=True)
                 
                 st.markdown("</ul></div>", unsafe_allow_html=True)
             
             # 관련 직업 추천
             st.markdown("---")
-            st.markdown("""
+            st.markdown(f"""
             <div style="text-align: center; margin: 2rem 0;">
-                <h4 style="color: #667eea; margin-bottom: 1rem;">
+                <h4 style="color: {text_color}; margin-bottom: 1rem;">
                     <i class="fas fa-link"></i> 관련 직업 추천
                 </h4>
+                <p style="color: {text_color}; font-size: 0.9rem; opacity: 0.7;">
+                    비슷한 스킬셋을 가진 다른 직업들도 살펴보세요
+                </p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -1746,11 +2145,11 @@ if search_button:
             for idx, (col, related) in enumerate(zip(cols, current_related)):
                 with col:
                     st.markdown(f"""
-                    <div style="background: white; padding: 1rem; border-radius: 10px; 
+                    <div style="background: {card_bg}; padding: 1rem; border-radius: 10px; 
                                 text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
                                 transition: all 0.3s ease; cursor: pointer;">
                         <i class="fas fa-briefcase" style="color: #667eea; font-size: 1.5rem;"></i>
-                        <p style="margin: 0.5rem 0; font-weight: 600;">{related}</p>
+                        <p style="margin: 0.5rem 0; font-weight: 600; color: {text_color};">{related}</p>
                     </div>
                     """, unsafe_allow_html=True)
             
@@ -1805,3 +2204,4 @@ st.markdown(f"""
     </p>
 </div>
 """, unsafe_allow_html=True)
+```
