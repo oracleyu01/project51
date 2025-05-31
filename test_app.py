@@ -380,14 +380,13 @@ with st.sidebar:
     # iframe을 중앙 정렬하고 스타일 적용
     st.markdown("""
     <div style="text-align: center; padding: 1rem 0;">
-        <iframe src="https://coupa.ng/ciuK2D" 
+        <iframe src="https://coupa.ng/civZCO" 
                 width="120" 
                 height="240" 
                 frameborder="0" 
                 scrolling="no" 
                 referrerpolicy="unsafe-url" 
-                browsingtopics
-                style="border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                browsingtopics>
         </iframe>
         <p style="font-size: 0.7rem; color: #666; margin-top: 0.5rem;">
             이 포스팅은 쿠팡 파트너스 활동의 일환으로,<br>
