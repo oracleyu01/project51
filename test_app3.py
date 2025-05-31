@@ -9,6 +9,7 @@ import requests
 from urllib.parse import quote
 import plotly.graph_objects as go
 import plotly.express as px
+import os
 
 # 페이지 설정
 st.set_page_config(
@@ -20,8 +21,17 @@ st.set_page_config(
 
 # 세션 상태 초기화
 def initialize_session_state():
+    # API 키 자동 설정 - GitHub Secrets/Streamlit Secrets에서 가져오기
     if 'openai_api_key' not in st.session_state:
-        st.session_state.openai_api_key = None
+        # Streamlit Secrets에서 먼저 확인
+        if "OPENAI_API_KEY" in st.secrets:
+            st.session_state.openai_api_key = st.secrets["OPENAI_API_KEY"]
+        # 환경 변수에서 확인
+        elif "OPENAI_API_KEY" in os.environ:
+            st.session_state.openai_api_key = os.environ["OPENAI_API_KEY"]
+        else:
+            st.session_state.openai_api_key = None
+            
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
     if 'current_problem' not in st.session_state:
@@ -482,31 +492,15 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # API 키 설정
-    st.markdown("### 🔑 API 설정")
+    # API 연결 상태 표시
+    st.markdown("### 🔑 API 상태")
     
     if st.session_state.openai_api_key:
-        st.success("✅ API 키가 설정되어 있습니다")
-        if st.button("🔄 API 키 변경"):
-            st.session_state.openai_api_key = None
-            st.rerun()
+        st.success("✅ API가 연결되어 있습니다")
+        st.info("AI 튜터가 준비되었습니다! 질문을 시작하세요.")
     else:
-        api_key = st.text_input("OpenAI API Key", type="password", 
-                               help="OpenAI 계정에서 발급받은 API 키를 입력하세요")
-        
-        if st.button("✅ 설정", type="primary"):
-            if api_key:
-                try:
-                    # API 키 검증
-                    openai.api_key = api_key
-                    st.session_state.openai_api_key = api_key
-                    st.success("API 키가 성공적으로 설정되었습니다!")
-                    time.sleep(1)
-                    st.rerun()
-                except:
-                    st.error("유효하지 않은 API 키입니다.")
-            else:
-                st.error("API 키를 입력해주세요.")
+        st.error("❌ API 키가 설정되지 않았습니다")
+        st.warning("GitHub Secrets 또는 환경변수에 OPENAI_API_KEY를 설정해주세요.")
     
     st.markdown("---")
     
@@ -981,7 +975,7 @@ print(f"최고 검거율 유형들의 총 검거건수: {total_arrests}")
 # ChatGPT API 호출 함수
 def get_chatgpt_response(question, context, chat_history=[]):
     if not st.session_state.openai_api_key:
-        return "❌ OpenAI API 키가 설정되지 않았습니다. 왼쪽 사이드바에서 API 키를 설정해주세요."
+        return "❌ OpenAI API 키가 설정되지 않았습니다. GitHub Secrets 또는 환경변수에 OPENAI_API_KEY를 설정해주세요."
     
     try:
         openai.api_key = st.session_state.openai_api_key
@@ -1090,29 +1084,18 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# API 키 확인
+# API 키 확인 (자동 설정됨)
 if not st.session_state.openai_api_key:
     st.markdown("""
     <div class="content-card fade-in">
         <div style="text-align: center; padding: 2rem;">
-            <i class="fas fa-key" style="font-size: 3rem; color: #667eea; margin-bottom: 1rem;"></i>
-            <h3>🚀 시작하기</h3>
-            <p>AI 튜터와 대화하려면 왼쪽 사이드바에서 OpenAI API 키를 설정해주세요!</p>
+            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc3545; margin-bottom: 1rem;"></i>
+            <h3>⚠️ API 키 설정 필요</h3>
+            <p>API 키가 환경변수에 설정되지 않았습니다.</p>
+            <p>GitHub Secrets 또는 Streamlit Secrets에 OPENAI_API_KEY를 추가해주세요.</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
-    with st.expander("❓ API 키가 없으신가요?", expanded=True):
-        st.markdown("""
-        ### 🔑 OpenAI API 키 발급 방법
-        
-        1. **[OpenAI 웹사이트](https://platform.openai.com) 방문**
-        2. **계정 생성 또는 로그인**
-        3. **API Keys 메뉴에서 새 키 생성**
-        4. **생성된 키를 복사하여 왼쪽 사이드바에 입력**
-        
-        💡 **팁**: API 사용료는 질문 당 약 1-5원 정도입니다.
-        """)
 
 # 메인 컨텐츠
 col1, col2 = st.columns([1.2, 1])
@@ -1225,7 +1208,7 @@ with col2:
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.warning("AI 답변을 받으려면 먼저 API 키를 설정해주세요!")
+            st.warning("AI 답변을 받으려면 API 키가 필요합니다!")
     
     elif ask_button:
         st.warning("질문을 입력해주세요!")
