@@ -471,17 +471,6 @@ with st.sidebar:
         position: relative;
         overflow: hidden;
     ">
-        <style>
-            @keyframes pulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.02); }
-                100% { transform: scale(1); }
-            }
-            @keyframes sparkle {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-        </style>
         <div style="position: absolute; top: 10px; right: 10px; font-size: 1.5rem; animation: sparkle 3s linear infinite;">✨</div>
         <div style="position: absolute; bottom: 10px; left: 10px; font-size: 1.5rem; animation: sparkle 3s linear infinite reverse;">⭐</div>
         
@@ -525,6 +514,22 @@ with st.sidebar:
         </p>
     </div>
     """, unsafe_allow_html=True)
+    
+    st.markdown("### ⚙️ 설정")
+    dark_mode = st.checkbox("🌙 다크모드", value=st.session_state.dark_mode)
+    st.session_state.dark_mode = dark_mode
+    
+    st.markdown("### 📌 북마크")
+    if st.session_state.bookmarks:
+        for bookmark in st.session_state.bookmarks:
+            if st.button(f"🔖 {bookmark}", key=f"bookmark_{bookmark}"):
+                st.session_state.selected_bookmark = bookmark
+    else:
+        st.info("북마크가 없습니다")
+    
+    st.markdown("### 📊 사용 통계")
+    st.metric("총 검색 수", f"{st.session_state.total_searches}회")
+    st.metric("저장된 직업", f"{st.session_state.saved_careers}개")
     
     st.markdown("### ⚙️ 설정")
     dark_mode = st.checkbox("🌙 다크모드", value=st.session_state.dark_mode)
