@@ -489,7 +489,18 @@ with st.sidebar:
     dark_mode = st.checkbox("🌙 다크모드", value=st.session_state.dark_mode)
     st.session_state.dark_mode = dark_mode
     
-    # ... 나머지 사이드바 코드
+    st.markdown("### 📌 북마크")
+    if st.session_state.bookmarks:
+        for bookmark in st.session_state.bookmarks:
+            if st.button(f"🔖 {bookmark}", key=f"bookmark_{bookmark}"):
+                st.session_state.selected_bookmark = bookmark
+    else:
+        st.info("북마크가 없습니다")
+    
+    st.markdown("### 📊 사용 통계")
+    st.metric("총 검색 수", f"{st.session_state.total_searches}회")
+    st.metric("저장된 직업", f"{st.session_state.saved_careers}개")
+    
     
     st.markdown("### ⚙️ 설정")
     dark_mode = st.checkbox("🌙 다크모드", value=st.session_state.dark_mode)
