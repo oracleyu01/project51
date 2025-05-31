@@ -1,3 +1,7 @@
+```python
+"""
+직업군 장단점 분석 앱 - LangGraph 버전
+"""
 
 import streamlit as st
 
@@ -29,7 +33,6 @@ from collections import Counter
 import io
 import base64
 import urllib.request
-import urllib.parse
 
 # LangGraph 관련
 from typing import TypedDict, Annotated, List, Union, Dict
@@ -503,7 +506,6 @@ class CareerState(TypedDict):
     sources: List[dict]
     salary_info: dict
     career_path: List[str]
-    job_postings: List[dict]  # 채용 공고 추가
     messages: Annotated[List[Union[HumanMessage, AIMessage]], operator.add]
     error: str
 
@@ -809,116 +811,26 @@ class CareerInfoCrawler:
         
         return default_salary
     
-    def get_realtime_job_postings(self, career_name):
-        """실시간 채용 공고 크롤링"""
-        import urllib.parse
+    def get_career_path(self, career_name):
+        """경력 개발 경로 제공 (샘플)"""
+        sample_paths = {
+            "데이터 분석가": ["주니어 분석가", "분석가", "시니어 분석가", "리드 분석가", "데이터 팀장", "CDO"],
+            "데이터 엔지니어": ["주니어 엔지니어", "엔지니어", "시니어 엔지니어", "리드 엔지니어", "데이터 아키텍트", "CTO"],
+            "DBA": ["주니어 DBA", "DBA", "시니어 DBA", "DB 팀장", "DB 아키텍트", "CTO"],
+            "DB 엔지니어": ["주니어 엔지니어", "DB 엔지니어", "시니어 엔지니어", "DB 아키텍트", "솔루션 아키텍트"],
+            "AI 개발자": ["주니어 개발자", "AI 개발자", "시니어 개발자", "AI 리드", "AI 팀장", "CTO"],
+            "AI 엔지니어": ["주니어 엔지니어", "AI 엔지니어", "시니어 엔지니어", "MLOps 리드", "AI 플랫폼 팀장"],
+            "자바 개발자": ["주니어 개발자", "개발자", "시니어 개발자", "테크 리드", "개발 팀장", "CTO"],
+            "백엔드 개발자": ["주니어 개발자", "개발자", "시니어 개발자", "테크 리드", "백엔드 팀장", "CTO"]
+        }
         
-        # 검색어 생성 (신입, 경력 1-2년)
-        search_keywords = [
-            f"{career_name} 신입",
-            f"{career_name} 주니어",
-            f"{career_name} 경력 1년",
-            f"{career_name} 경력 2년"
-        ]
+        default_path = ["신입", "경력 3년차", "경력 5년차", "팀장급", "임원급"]
         
-        all_postings = []
+        for key, value in sample_paths.items():
+            if key in career_name:
+                return value
         
-        try:
-            # 네이버 검색으로 채용 정보 수집
-            for keyword in search_keywords[:2]:  # API 호출 제한으로 2개만
-                encoded_query = urllib.parse.quote(f"{keyword} 채용")
-                url = "https://openapi.naver.com/v1/search/webkr.json"
-                
-                params = {
-                    "query": encoded_query,
-                    "display": 10,
-                    "sort": "date"  # 최신순
-                }
-                
-                response = requests.get(url, headers=self.naver_headers, params=params)
-                
-                if response.status_code == 200:
-                    results = response.json()
-                    
-                    for item in results.get('items', []):
-                        title = self.remove_html_tags(item.get('title', ''))
-                        description = self.remove_html_tags(item.get('description', ''))
-                        link = item.get('link', '')
-                        
-                        # 채용 관련 키워드 확인
-                        if any(word in title + description for word in ['채용', '모집', '구인', 'hiring', 'recruit']):
-                            # 회사명 추출 시도
-                            company = ""
-                            for corp_indicator in ['(주)', '㈜', '주식회사', 'Corp', 'Inc', 'Ltd']:
-                                if corp_indicator in title:
-                                    parts = title.split(corp_indicator)
-                                    if parts:
-                                        company = parts[0].strip() + corp_indicator
-                                        break
-                            
-                            if not company:
-                                # 제목에서 첫 단어를 회사명으로 추정
-                                company = title.split()[0] if title.split() else "기업"
-                            
-                            # 연봉 정보 추출 시도
-                            salary = "회사 내규"
-                            salary_patterns = [
-                                r'(\d{3,4})\s*만\s*원',
-                                r'(\d{3,4})\s*만원',
-                                r'(\d{3,4})\s*~\s*(\d{3,4})',
-                                r'연봉\s*(\d{3,4})'
-                            ]
-                            
-                            for pattern in salary_patterns:
-                                match = re.search(pattern, description)
-                                if match:
-                                    if match.lastindex == 2:  # 범위인 경우
-                                        salary = f"{match.group(1)}~{match.group(2)}만원"
-                                    else:
-                                        salary = f"{match.group(1)}만원~"
-                                    break
-                            
-                            # 위치 정보 추출
-                            location = "서울"
-                            locations = ['강남', '판교', '분당', '여의도', '구로', '가산', '상암', '을지로', '종로', '마포']
-                            for loc in locations:
-                                if loc in description:
-                                    location = loc
-                                    break
-                            
-                            posting = {
-                                "company": company[:20],  # 회사명 길이 제한
-                                "title": title[:50],
-                                "description": description[:200],
-                                "link": link,
-                                "salary": salary,
-                                "location": location,
-                                "type": "정규직",
-                                "requirements": []
-                            }
-                            
-                            # 요구사항 추출
-                            req_keywords = ['경험', '능력', '우대', '필수', '자격', '조건']
-                            req_sentences = [sent for sent in description.split('.') 
-                                           if any(kw in sent for kw in req_keywords)]
-                            posting["requirements"] = req_sentences[:3]
-                            
-                            all_postings.append(posting)
-                
-                time.sleep(0.5)  # API 호출 제한
-                
-        except Exception as e:
-            print(f"채용 정보 크롤링 오류: {e}")
-        
-        # 중복 제거 및 정렬
-        seen_companies = set()
-        unique_postings = []
-        for posting in all_postings:
-            if posting["company"] not in seen_companies and len(unique_postings) < 5:
-                seen_companies.add(posting["company"])
-                unique_postings.append(posting)
-        
-        return unique_postings
+        return default_path
 
 # ========================
 # 유틸리티 함수들
@@ -1374,30 +1286,6 @@ def crawl_web(state: CareerState) -> CareerState:
         state["salary_info"] = crawler.get_career_salary_info(career_name)
         state["career_path"] = crawler.get_career_path(career_name)
         
-        # 샘플 채용 공고 (API 키가 없을 때)
-        state["job_postings"] = [
-            {
-                "company": "네이버",
-                "title": f"{career_name} 신입 채용 (2025년 상반기)",
-                "description": f"{career_name} 포지션에서 함께 성장할 인재를 찾습니다. 신입 및 경력 1-2년 지원 가능.",
-                "link": f"https://www.saramin.co.kr/zf_user/search?searchType=search&searchword={urllib.parse.quote(career_name)}",
-                "salary": "신입 기준 4,000만원~",
-                "location": "판교",
-                "type": "정규직",
-                "source": "saramin.co.kr"
-            },
-            {
-                "company": "카카오",
-                "title": f"주니어 {career_name} 모집",
-                "description": "카카오와 함께 세상을 변화시킬 주니어 개발자를 모집합니다.",
-                "link": f"https://www.wanted.co.kr/search?query={urllib.parse.quote(career_name)}",
-                "salary": "협의",
-                "location": "판교",
-                "type": "정규직",
-                "source": "wanted.co.kr"
-            }
-        ]
-        
         state["messages"].append(
             AIMessage(content="📌 샘플 데이터를 표시합니다 (API 키 설정 필요)")
         )
@@ -1457,12 +1345,6 @@ def crawl_web(state: CareerState) -> CareerState:
     state["salary_info"] = crawler.get_career_salary_info(career_name)
     state["career_path"] = crawler.get_career_path(career_name)
     
-    # 실시간 채용 정보 가져오기
-    try:
-        state["job_postings"] = crawler.get_realtime_job_postings(career_name)
-    except:
-        state["job_postings"] = []
-    
     if state["pros"] or state["cons"]:
         state["messages"].append(
             AIMessage(content=f"🎉 웹 크롤링 완료! 총 장점 {len(state['pros'])}개, 단점 {len(state['cons'])}개 수집")
@@ -1519,11 +1401,6 @@ def process_results(state: CareerState) -> CareerState:
         if crawler:
             state["salary_info"] = crawler.get_career_salary_info(state["career_name"])
             state["career_path"] = crawler.get_career_path(state["career_name"])
-            # 실시간 채용 정보
-            try:
-                state["job_postings"] = crawler.get_realtime_job_postings(state["career_name"])
-            except:
-                state["job_postings"] = []
         
         state["messages"].append(
             AIMessage(content=f"📋 결과 정리 완료: 장점 {len(state['pros'])}개, 단점 {len(state['cons'])}개")
@@ -1663,7 +1540,6 @@ if search_button:
             "sources": [],
             "salary_info": {},
             "career_path": [],
-            "job_postings": [],
             "messages": [],
             "error": ""
         }
@@ -1696,174 +1572,9 @@ if search_button:
             </div>
             """, unsafe_allow_html=True)
             
-            # 구체적인 업무 내용 표시 (맨 위로 이동)
-            st.markdown("---")
-            st.markdown("### 🎯 이 직업이 하는 일")
-            
-            # 직업별 구체적인 업무 정의
-            job_descriptions = {
-                "데이터 분석가": {
-                    "summary": "데이터를 수집하고 분석하여 비즈니스 의사결정을 돕는 전문가입니다.",
-                    "tasks": [
-                        "회사의 매출, 고객, 제품 데이터를 모아서 정리하기",
-                        "엑셀이나 SQL로 데이터를 뽑아서 보기 좋게 만들기",
-                        "숫자가 의미하는 것을 찾아내고 설명하기",
-                        "그래프와 차트로 데이터를 시각화하기",
-                        "데이터를 보고 '왜 이런 일이 일어났는지' 분석하기",
-                        "경영진이나 팀에게 데이터 기반 제안하기",
-                        "A/B 테스트로 어떤 방법이 더 좋은지 확인하기"
-                    ]
-                },
-                "데이터 엔지니어": {
-                    "summary": "대용량 데이터가 잘 흐르도록 시스템을 만들고 관리하는 전문가입니다.",
-                    "tasks": [
-                        "여러 곳에서 데이터를 모아오는 파이프라인 만들기",
-                        "매일 자동으로 데이터가 처리되도록 시스템 구축하기",
-                        "엄청나게 많은 데이터를 빠르게 처리하는 프로그램 만들기",
-                        "실시간으로 들어오는 데이터를 처리하는 시스템 개발",
-                        "데이터를 안전하게 저장하고 쉽게 찾을 수 있게 정리하기",
-                        "클라우드(AWS, GCP)에서 데이터 시스템 운영하기",
-                        "데이터 품질을 체크하고 문제를 해결하기"
-                    ]
-                },
-                "DBA": {
-                    "summary": "회사의 중요한 데이터베이스를 안전하게 관리하는 전문가입니다.",
-                    "tasks": [
-                        "데이터베이스 설치하고 설정하기",
-                        "데이터베이스가 느려지지 않도록 성능 관리하기",
-                        "매일 데이터를 백업하고 문제 생기면 복구하기",
-                        "해킹이나 데이터 유출을 막기 위한 보안 설정",
-                        "데이터베이스에 얼마나 공간이 남았는지 확인하고 관리",
-                        "24시간 데이터베이스를 감시하고 문제 생기면 바로 해결",
-                        "개발자들이 데이터를 빠르게 조회할 수 있도록 도와주기"
-                    ]
-                },
-                "DB 엔지니어": {
-                    "summary": "데이터베이스를 설계하고 개발하는 전문가입니다.",
-                    "tasks": [
-                        "새로운 서비스에 필요한 데이터베이스 구조 설계하기",
-                        "데이터를 저장하고 꺼내는 프로그램(프로시저) 만들기",
-                        "오래된 데이터베이스를 새로운 시스템으로 옮기기",
-                        "느린 쿼리를 빠르게 만들기 위한 최적화 작업",
-                        "데이터베이스와 연결되는 API 개발하기",
-                        "관계형 DB와 NoSQL DB 중 적합한 것 선택하고 구현",
-                        "데이터가 정확하게 저장되고 있는지 검증하기"
-                    ]
-                },
-                "AI 개발자": {
-                    "summary": "인공지능 모델을 만들고 학습시키는 전문가입니다.",
-                    "tasks": [
-                        "머신러닝/딥러닝 알고리즘을 사용해 AI 모델 만들기",
-                        "AI가 학습할 데이터를 준비하고 정리하기",
-                        "모델이 잘 학습하도록 파라미터 조정하기",
-                        "텐서플로우, 파이토치 같은 도구로 모델 개발하기",
-                        "모델이 얼마나 정확한지 테스트하고 개선하기",
-                        "만든 AI를 실제 서비스에서 사용할 수 있게 만들기",
-                        "AI 모델이 계속 잘 작동하는지 모니터링하기"
-                    ]
-                },
-                "AI 엔지니어": {
-                    "summary": "AI 모델을 실제 서비스에서 잘 작동하도록 만드는 전문가입니다.",
-                    "tasks": [
-                        "AI 모델을 실제 서비스에 연결하는 시스템 구축",
-                        "무거운 모델을 가볍고 빠르게 만들기",
-                        "모바일이나 IoT 기기에서 AI가 작동하도록 최적화",
-                        "실시간으로 AI 예측 결과를 제공하는 시스템 개발",
-                        "여러 컴퓨터를 사용해 AI를 빠르게 학습시키기",
-                        "AI 모델의 버전을 관리하고 테스트하기",
-                        "GPU 서버를 효율적으로 관리하고 비용 절감하기"
-                    ]
-                },
-                "자바 개발자": {
-                    "summary": "자바 언어로 웹 애플리케이션과 시스템을 개발하는 전문가입니다.",
-                    "tasks": [
-                        "스프링 프레임워크로 웹 서비스 만들기",
-                        "사용자 요청을 처리하는 API 개발하기",
-                        "데이터베이스와 연결해서 정보 저장/조회하기",
-                        "프로그램이 잘 작동하는지 테스트 코드 작성하기",
-                        "여러 작업을 동시에 처리하는 프로그램 만들기",
-                        "메이븐/그래들로 프로젝트 빌드 관리하기",
-                        "다른 개발자와 함께 코드 리뷰하고 개선하기"
-                    ]
-                },
-                "백엔드 개발자": {
-                    "summary": "웹/앱 서비스의 서버 부분을 개발하는 전문가입니다.",
-                    "tasks": [
-                        "사용자 요청을 처리하는 서버 프로그램 만들기",
-                        "데이터베이스 설계하고 데이터 관리하기",
-                        "모바일 앱이나 웹이 사용할 API 만들기",
-                        "로그인, 회원가입 같은 인증 시스템 구현하기",
-                        "자주 사용하는 데이터를 빠르게 제공하는 캐시 시스템 구축",
-                        "여러 서비스를 연결하는 마이크로서비스 개발",
-                        "코드를 자동으로 테스트하고 배포하는 시스템 구축"
-                    ]
-                }
-            }
-            
-            # 현재 직업에 해당하는 설명 찾기
-            current_job_info = None
-            career_lower = final_state["career_name"].lower()
-            
-            for job_key, info in job_descriptions.items():
-                if job_key.lower() in career_lower or career_lower in job_key.lower():
-                    current_job_info = info
-                    break
-            
-            # 기본 설명 (매칭되는 직업이 없을 경우)
-            if not current_job_info:
-                current_job_info = {
-                    "summary": f"{final_state['career_name']}는 해당 분야의 전문 지식과 기술을 활용하여 업무를 수행하는 전문가입니다.",
-                    "tasks": [
-                        "해당 분야의 전문 지식을 활용한 업무 수행",
-                        "프로젝트 계획 수립 및 실행",
-                        "팀원들과의 협업 및 커뮤니케이션",
-                        "업무 관련 문서 작성 및 보고",
-                        "지속적인 학습 및 역량 개발",
-                        "품질 관리 및 개선 활동",
-                        "고객 요구사항 분석 및 대응"
-                    ]
-                }
-            
-            # 직업 설명 카드 표시
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                        padding: 2rem; border-radius: 20px; color: white; 
-                        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3); margin-bottom: 2rem;">
-                <h4 style="margin-bottom: 1rem; font-size: 1.3rem;">
-                    <i class="fas fa-user-tie"></i> {final_state['career_name']}란?
-                </h4>
-                <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem;">
-                    {current_job_info['summary']}
-                </p>
-                <h5 style="margin-bottom: 1rem;">
-                    <i class="fas fa-tasks"></i> 주요 업무 (쉽게 설명하면)
-                </h5>
-                <div style="display: grid; gap: 0.8rem;">
-            """, unsafe_allow_html=True)
-            
-            for idx, task in enumerate(current_job_info['tasks'], 1):
-                st.markdown(f"""
-                    <div style="background: rgba(255, 255, 255, 0.1); padding: 0.8rem 1rem; 
-                                border-radius: 10px; display: flex; align-items: center;
-                                backdrop-filter: blur(10px);">
-                        <span style="background: rgba(255, 255, 255, 0.2); 
-                                     width: 30px; height: 30px; border-radius: 50%; 
-                                     display: flex; align-items: center; justify-content: center;
-                                     margin-right: 1rem; flex-shrink: 0;">
-                            {idx}
-                        </span>
-                        <span style="line-height: 1.5;">{task}</span>
-                    </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown("""
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
             # 연봉 정보 및 경력 경로
             st.markdown("---")
-            st.markdown("### 💰 연봉 및 커리어 패스")
+            st.markdown("### 💼 직업 개요")
             
             col1, col2 = st.columns([1, 1])
             
@@ -1881,7 +1592,7 @@ if search_button:
             
             # 장단점 상세 표시
             st.markdown("---")
-            st.markdown("### 📋 장단점 분석")
+            st.markdown("### 📋 상세 분석 결과")
             
             col1, col2 = st.columns(2)
             
@@ -1927,9 +1638,155 @@ if search_button:
                 else:
                     st.write("단점 정보가 없습니다.")
             
-            # 실시간 채용 공고 섹션
+            # 구체적인 업무 내용 표시
             st.markdown("---")
-            st.markdown("### 💼 실시간 채용 공고")
+            st.markdown("### 💻 구체적인 업무 내용")
+            
+            # 직업별 구체적인 업무 정의
+            job_tasks = {
+                "데이터 분석가": [
+                    "비즈니스 데이터 수집 및 정제 작업",
+                    "SQL을 활용한 데이터 추출 및 가공",
+                    "Python/R을 이용한 통계 분석 수행",
+                    "대시보드 및 시각화 리포트 작성 (Tableau, Power BI)",
+                    "A/B 테스트 설계 및 결과 분석",
+                    "비즈니스 인사이트 도출 및 의사결정 지원",
+                    "데이터 품질 관리 및 검증"
+                ],
+                "데이터 엔지니어": [
+                    "데이터 파이프라인 설계 및 구축",
+                    "ETL/ELT 프로세스 개발 및 관리",
+                    "대용량 데이터 처리 시스템 구축 (Hadoop, Spark)",
+                    "실시간 데이터 스트리밍 처리 (Kafka, Flink)",
+                    "데이터 웨어하우스/레이크 아키텍처 설계",
+                    "클라우드 기반 데이터 인프라 구축 (AWS, GCP, Azure)",
+                    "데이터 품질 모니터링 시스템 개발"
+                ],
+                "DBA": [
+                    "데이터베이스 설치, 구성 및 업그레이드",
+                    "데이터베이스 성능 튜닝 및 최적화",
+                    "백업 및 복구 전략 수립 및 실행",
+                    "데이터베이스 보안 정책 수립 및 관리",
+                    "용량 계획 및 스토리지 관리",
+                    "데이터베이스 모니터링 및 장애 대응",
+                    "SQL 쿼리 최적화 지원"
+                ],
+                "DB 엔지니어": [
+                    "데이터베이스 스키마 설계 및 모델링",
+                    "저장 프로시저, 함수, 트리거 개발",
+                    "데이터베이스 마이그레이션 계획 및 실행",
+                    "인덱스 설계 및 쿼리 성능 최적화",
+                    "데이터베이스 연동 API 개발",
+                    "NoSQL 데이터베이스 설계 및 구현",
+                    "데이터 정합성 및 무결성 관리"
+                ],
+                "AI 개발자": [
+                    "머신러닝/딥러닝 모델 설계 및 개발",
+                    "데이터 전처리 및 특징 공학 (Feature Engineering)",
+                    "모델 학습 및 하이퍼파라미터 튜닝",
+                    "TensorFlow, PyTorch 등 프레임워크 활용",
+                    "모델 성능 평가 및 개선",
+                    "AI 서비스 API 개발 및 배포",
+                    "MLOps 파이프라인 구축"
+                ],
+                "AI 엔지니어": [
+                    "AI 모델 서빙 인프라 구축",
+                    "모델 경량화 및 최적화 (양자화, 프루닝)",
+                    "엣지 디바이스용 AI 모델 배포",
+                    "실시간 추론 시스템 개발",
+                    "분산 학습 환경 구축 및 관리",
+                    "AI 모델 버전 관리 및 A/B 테스트",
+                    "GPU/TPU 클러스터 관리 및 최적화"
+                ],
+                "자바 개발자": [
+                    "Spring Framework 기반 웹 애플리케이션 개발",
+                    "RESTful API 설계 및 구현",
+                    "JPA/Hibernate를 활용한 데이터 액세스 계층 개발",
+                    "단위 테스트 및 통합 테스트 작성 (JUnit, Mockito)",
+                    "멀티스레드 프로그래밍 및 동시성 제어",
+                    "Maven/Gradle 빌드 도구 활용",
+                    "코드 리뷰 및 리팩토링"
+                ],
+                "백엔드 개발자": [
+                    "서버 사이드 비즈니스 로직 구현",
+                    "데이터베이스 설계 및 쿼리 작성",
+                    "API 설계 및 문서화 (Swagger)",
+                    "인증/인가 시스템 구현 (JWT, OAuth)",
+                    "캐싱 전략 수립 및 구현 (Redis)",
+                    "마이크로서비스 아키텍처 설계",
+                    "CI/CD 파이프라인 구축 및 배포 자동화"
+                ]
+            }
+            
+            # 현재 직업에 해당하는 업무 찾기
+            current_tasks = []
+            career_lower = final_state["career_name"].lower()
+            
+            for job_key, tasks in job_tasks.items():
+                if job_key.lower() in career_lower or career_lower in job_key.lower():
+                    current_tasks = tasks
+                    break
+            
+            # 기본 업무 (매칭되는 직업이 없을 경우)
+            if not current_tasks:
+                current_tasks = [
+                    "해당 분야의 전문 지식을 활용한 업무 수행",
+                    "프로젝트 계획 수립 및 실행",
+                    "팀원들과의 협업 및 커뮤니케이션",
+                    "업무 관련 문서 작성 및 보고",
+                    "지속적인 학습 및 역량 개발",
+                    "품질 관리 및 개선 활동",
+                    "고객 요구사항 분석 및 대응"
+                ]
+            
+            # 업무 내용을 2열로 표시
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("""
+                <div style="background: linear-gradient(135deg, #e6f3ff 0%, #c5e0ff 100%); 
+                            padding: 1.5rem; border-radius: 15px; margin-bottom: 1rem;">
+                    <h5 style="color: #2196F3; margin-bottom: 1rem;">
+                        <i class="fas fa-tasks"></i> 주요 업무
+                    </h5>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                for idx, task in enumerate(current_tasks[:len(current_tasks)//2], 1):
+                    st.markdown(f"""
+                    <div style="background: white; padding: 1rem; margin: 0.5rem 0; 
+                                border-radius: 8px; border-left: 4px solid #2196F3;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span style="color: #2196F3; font-weight: bold;">
+                            <i class="fas fa-chevron-right"></i> {idx}.
+                        </span> {task}
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown("""
+                <div style="background: linear-gradient(135deg, #e6f3ff 0%, #c5e0ff 100%); 
+                            padding: 1.5rem; border-radius: 15px; margin-bottom: 1rem;">
+                    <h5 style="color: #2196F3; margin-bottom: 1rem;">
+                        <i class="fas fa-clipboard-list"></i> 추가 업무
+                    </h5>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                for idx, task in enumerate(current_tasks[len(current_tasks)//2:], len(current_tasks)//2 + 1):
+                    st.markdown(f"""
+                    <div style="background: white; padding: 1rem; margin: 0.5rem 0; 
+                                border-radius: 8px; border-left: 4px solid #2196F3;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span style="color: #2196F3; font-weight: bold;">
+                            <i class="fas fa-chevron-right"></i> {idx}.
+                        </span> {task}
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            # 추가 인사이트
+            st.markdown("---")
+            st.markdown("### 💡 직업 인사이트")
             
             # 직업별 맞춤 인사이트
             career_insights = {
@@ -2123,14 +1980,11 @@ if search_button:
             
             # 관련 직업 추천
             st.markdown("---")
-            st.markdown(f"""
+            st.markdown("""
             <div style="text-align: center; margin: 2rem 0;">
-                <h4 style="color: {text_color}; margin-bottom: 1rem;">
+                <h4 style="color: #667eea; margin-bottom: 1rem;">
                     <i class="fas fa-link"></i> 관련 직업 추천
                 </h4>
-                <p style="color: {text_color}; font-size: 0.9rem; opacity: 0.7;">
-                    비슷한 스킬셋을 가진 다른 직업들도 살펴보세요
-                </p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -2160,11 +2014,11 @@ if search_button:
             for idx, (col, related) in enumerate(zip(cols, current_related)):
                 with col:
                     st.markdown(f"""
-                    <div style="background: {card_bg}; padding: 1rem; border-radius: 10px; 
+                    <div style="background: white; padding: 1rem; border-radius: 10px; 
                                 text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
                                 transition: all 0.3s ease; cursor: pointer;">
                         <i class="fas fa-briefcase" style="color: #667eea; font-size: 1.5rem;"></i>
-                        <p style="margin: 0.5rem 0; font-weight: 600; color: {text_color};">{related}</p>
+                        <p style="margin: 0.5rem 0; font-weight: 600;">{related}</p>
                     </div>
                     """, unsafe_allow_html=True)
             
@@ -2180,6 +2034,341 @@ if search_button:
                             </a>
                         </div>
                         """, unsafe_allow_html=True)
+            
+            # 신입 채용 공고 섹션
+            st.markdown("---")
+            st.markdown(f"""
+            <div style="text-align: center; margin: 2rem 0;">
+                <h3 style="color: {text_color}; margin-bottom: 1rem;">
+                    <i class="fas fa-briefcase"></i> 신입 채용 공고
+                </h3>
+                <p style="color: {text_color}; opacity: 0.7; font-size: 0.9rem;">
+                    현재 채용 중인 신입 포지션입니다
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 직업별 채용 공고 샘플
+            job_postings = {
+                "데이터 분석가": [
+                    {
+                        "company": "네이버",
+                        "title": "데이터 분석가 신입 채용",
+                        "requirements": ["SQL 활용 능력", "Python/R 기초", "통계학 전공 우대"],
+                        "salary": "4,000~4,500만원",
+                        "location": "판교",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "카카오",
+                        "title": "주니어 데이터 애널리스트",
+                        "requirements": ["데이터 분석 프로젝트 경험", "시각화 도구 경험", "영어 가능자"],
+                        "salary": "4,200~4,800만원",
+                        "location": "판교",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "쿠팡",
+                        "title": "비즈니스 데이터 분석가",
+                        "requirements": ["커머스 도메인 이해", "A/B 테스트 경험", "SQL 필수"],
+                        "salary": "4,500~5,000만원",
+                        "location": "서울",
+                        "type": "정규직"
+                    }
+                ],
+                "데이터 엔지니어": [
+                    {
+                        "company": "삼성전자",
+                        "title": "빅데이터 엔지니어 신입",
+                        "requirements": ["컴퓨터공학 전공", "Hadoop/Spark 경험", "Java/Python"],
+                        "salary": "5,000~5,500만원",
+                        "location": "수원",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "LG CNS",
+                        "title": "데이터 파이프라인 엔지니어",
+                        "requirements": ["ETL 경험", "클라우드 플랫폼 이해", "Linux 활용"],
+                        "salary": "4,800~5,300만원",
+                        "location": "마곡",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "11번가",
+                        "title": "주니어 데이터 엔지니어",
+                        "requirements": ["실시간 처리 관심", "Kafka 경험 우대", "Python 필수"],
+                        "salary": "5,000~5,500만원",
+                        "location": "판교",
+                        "type": "정규직"
+                    }
+                ],
+                "DBA": [
+                    {
+                        "company": "신한은행",
+                        "title": "데이터베이스 관리자 신입",
+                        "requirements": ["Oracle/MySQL", "DB 관련 자격증", "운영체제 이해"],
+                        "salary": "4,500~5,000만원",
+                        "location": "중구",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "넥슨",
+                        "title": "게임 DB 관리자",
+                        "requirements": ["대용량 DB 관심", "24/7 운영 이해", "Linux 필수"],
+                        "salary": "4,800~5,300만원",
+                        "location": "판교",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "NHN",
+                        "title": "주니어 DBA",
+                        "requirements": ["DB 성능 튜닝 관심", "백업/복구 지식", "스크립팅 가능"],
+                        "salary": "4,700~5,200만원",
+                        "location": "판교",
+                        "type": "정규직"
+                    }
+                ],
+                "DB 엔지니어": [
+                    {
+                        "company": "카카오뱅크",
+                        "title": "DB 엔지니어 신입",
+                        "requirements": ["DB 설계 경험", "SQL 튜닝", "금융 도메인 우대"],
+                        "salary": "4,800~5,300만원",
+                        "location": "판교",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "SK텔레콤",
+                        "title": "데이터베이스 개발자",
+                        "requirements": ["DB 모델링", "프로시저 개발", "NoSQL 경험"],
+                        "salary": "4,700~5,200만원",
+                        "location": "을지로",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "인터파크",
+                        "title": "DB 개발 엔지니어",
+                        "requirements": ["전자상거래 DB 이해", "대용량 처리", "성능 최적화"],
+                        "salary": "4,500~5,000만원",
+                        "location": "강남",
+                        "type": "정규직"
+                    }
+                ],
+                "AI 개발자": [
+                    {
+                        "company": "네이버 클로바",
+                        "title": "AI 연구개발 신입",
+                        "requirements": ["딥러닝 프레임워크", "논문 구현 경험", "석사 우대"],
+                        "salary": "5,500~6,500만원",
+                        "location": "성남",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "카카오브레인",
+                        "title": "머신러닝 엔지니어",
+                        "requirements": ["PyTorch/TensorFlow", "모델 학습 경험", "수학/통계 지식"],
+                        "salary": "5,800~6,800만원",
+                        "location": "판교",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "현대자동차",
+                        "title": "자율주행 AI 개발자",
+                        "requirements": ["컴퓨터 비전", "딥러닝 모델링", "C++ 가능자"],
+                        "salary": "6,000~7,000만원",
+                        "location": "서울",
+                        "type": "정규직"
+                    }
+                ],
+                "AI 엔지니어": [
+                    {
+                        "company": "삼성 리서치",
+                        "title": "AI 플랫폼 엔지니어",
+                        "requirements": ["모델 서빙 경험", "MLOps 이해", "쿠버네티스"],
+                        "salary": "6,000~7,000만원",
+                        "location": "서초",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "LG AI연구원",
+                        "title": "AI 시스템 엔지니어",
+                        "requirements": ["모델 최적화", "엣지 AI", "C++/Python"],
+                        "salary": "5,800~6,800만원",
+                        "location": "마곡",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "업스테이지",
+                        "title": "MLOps 엔지니어",
+                        "requirements": ["ML 파이프라인", "모델 배포", "클라우드 플랫폼"],
+                        "salary": "6,500~7,500만원",
+                        "location": "강남",
+                        "type": "정규직"
+                    }
+                ],
+                "백엔드 개발자": [
+                    {
+                        "company": "토스",
+                        "title": "서버 개발자 신입",
+                        "requirements": ["Java/Kotlin", "Spring Boot", "CS 기초"],
+                        "salary": "5,000~5,500만원",
+                        "location": "강남",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "배달의민족",
+                        "title": "백엔드 엔지니어",
+                        "requirements": ["MSA 이해", "API 설계", "DB 기초"],
+                        "salary": "4,800~5,300만원",
+                        "location": "송파",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "라인",
+                        "title": "서버사이드 개발자",
+                        "requirements": ["Java/Go", "대용량 트래픽 관심", "Linux"],
+                        "salary": "5,200~5,800만원",
+                        "location": "분당",
+                        "type": "정규직"
+                    }
+                ],
+                "자바 개발자": [
+                    {
+                        "company": "삼성SDS",
+                        "title": "Java 개발자 신입",
+                        "requirements": ["Java", "Spring Framework", "전공자 우대"],
+                        "salary": "4,500~5,000만원",
+                        "location": "잠실",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "KB국민은행",
+                        "title": "IT 개발직 신입",
+                        "requirements": ["Java/Spring", "금융 IT 관심", "정보처리기사"],
+                        "salary": "4,800~5,200만원",
+                        "location": "여의도",
+                        "type": "정규직"
+                    },
+                    {
+                        "company": "SK C&C",
+                        "title": "엔터프라이즈 개발자",
+                        "requirements": ["Java EE", "Oracle DB", "SI 프로젝트 이해"],
+                        "salary": "4,200~4,800만원",
+                        "location": "판교",
+                        "type": "정규직"
+                    }
+                ]
+            }
+            
+            # 기본 채용 공고
+            default_postings = [
+                {
+                    "company": "테크 스타트업",
+                    "title": f"{final_state['career_name']} 신입 채용",
+                    "requirements": ["관련 전공 또는 부트캠프 수료", "열정과 성장 의지", "팀워크 중시"],
+                    "salary": "3,800~4,500만원",
+                    "location": "강남",
+                    "type": "정규직"
+                },
+                {
+                    "company": "IT 중견기업",
+                    "title": f"주니어 {final_state['career_name']}",
+                    "requirements": ["기초 프로그래밍 역량", "커뮤니케이션 능력", "문제해결능력"],
+                    "salary": "4,000~4,800만원",
+                    "location": "판교",
+                    "type": "정규직"
+                },
+                {
+                    "company": "외국계 IT기업",
+                    "title": f"{final_state['career_name']} (신입/경력)",
+                    "requirements": ["영어 커뮤니케이션 가능", "컴퓨터 관련 전공", "Git 사용 경험"],
+                    "salary": "5,000만원~",
+                    "location": "삼성",
+                    "type": "정규직"
+                }
+            ]
+            
+            # 현재 직업에 맞는 채용 공고 찾기
+            current_postings = default_postings
+            career_lower = final_state["career_name"].lower()
+            
+            for job_key, postings in job_postings.items():
+                if job_key.lower() in career_lower or career_lower in job_key.lower():
+                    current_postings = postings
+                    break
+            
+            # 채용 공고 카드 표시
+            for posting in current_postings:
+                st.markdown(f"""
+                <div class="job-posting-card" style="background: {card_bg}; border-radius: 15px; padding: 2rem; 
+                            margin-bottom: 1.5rem; box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+                            border-left: 5px solid #667eea;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <div>
+                            <h4 style="color: {text_color}; margin: 0;">{posting['company']}</h4>
+                            <h5 style="color: #667eea; margin: 0.5rem 0;">{posting['title']}</h5>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="background: #667eea; color: white; padding: 0.3rem 0.8rem; 
+                                         border-radius: 20px; font-size: 0.9rem; font-weight: 600;">
+                                {posting['type']}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <p style="margin: 0.3rem 0; color: {text_color}; opacity: 0.8;">
+                                <i class="fas fa-won-sign" style="color: #28a745; margin-right: 0.5rem;"></i>
+                                <strong>연봉:</strong> {posting['salary']}
+                            </p>
+                            <p style="margin: 0.3rem 0; color: {text_color}; opacity: 0.8;">
+                                <i class="fas fa-map-marker-alt" style="color: #dc3545; margin-right: 0.5rem;"></i>
+                                <strong>위치:</strong> {posting['location']}
+                            </p>
+                        </div>
+                        <div>
+                            <p style="margin: 0.3rem 0; color: {text_color}; opacity: 0.8;">
+                                <i class="fas fa-check-circle" style="color: #2196F3; margin-right: 0.5rem;"></i>
+                                <strong>요구사항:</strong>
+                            </p>
+                            <ul style="margin: 0.2rem 0 0 1.5rem; padding: 0; color: {text_color}; opacity: 0.8;">
+                                {"".join([f"<li style='margin: 0.2rem 0;'>{req}</li>" for req in posting['requirements']])}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: right; margin-top: 1rem;">
+                        <button class="apply-button" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                       color: white; border: none; padding: 0.5rem 1.5rem; 
+                                       border-radius: 25px; cursor: pointer; font-weight: 600;
+                                       transition: all 0.3s ease;">
+                            지원하기 →
+                        </button>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # 채용 정보 안내
+            st.markdown(f"""
+            <div style="background: {"#1a1a2e" if st.session_state.dark_mode else "#f0f4ff"}; padding: 1.5rem; border-radius: 10px; 
+                        margin-top: 2rem; text-align: center;">
+                <p style="color: {text_color}; margin: 0;">
+                    <i class="fas fa-info-circle"></i> 
+                    위 채용 공고는 예시이며, 실제 채용 정보는 각 기업 채용 페이지에서 확인하세요.
+                </p>
+                <div style="margin-top: 1rem;">
+                    <a href="https://www.saramin.co.kr" target="_blank" 
+                       style="margin: 0 0.5rem; color: #667eea;">사람인</a> |
+                    <a href="https://www.jobkorea.co.kr" target="_blank" 
+                       style="margin: 0 0.5rem; color: #667eea;">잡코리아</a> |
+                    <a href="https://www.wanted.co.kr" target="_blank" 
+                       style="margin: 0 0.5rem; color: #667eea;">원티드</a> |
+                    <a href="https://programmers.co.kr/job" target="_blank" 
+                       style="margin: 0 0.5rem; color: #667eea;">프로그래머스</a>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         else:
             st.error(f"'{search_term}'에 대한 정보를 찾을 수 없습니다.")
 
@@ -2219,3 +2408,4 @@ st.markdown(f"""
     </p>
 </div>
 """, unsafe_allow_html=True)
+```
