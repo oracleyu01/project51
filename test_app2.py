@@ -1696,9 +1696,174 @@ if search_button:
             </div>
             """, unsafe_allow_html=True)
             
+            # 구체적인 업무 내용 표시 (맨 위로 이동)
+            st.markdown("---")
+            st.markdown("### 🎯 이 직업이 하는 일")
+            
+            # 직업별 구체적인 업무 정의
+            job_descriptions = {
+                "데이터 분석가": {
+                    "summary": "데이터를 수집하고 분석하여 비즈니스 의사결정을 돕는 전문가입니다.",
+                    "tasks": [
+                        "회사의 매출, 고객, 제품 데이터를 모아서 정리하기",
+                        "엑셀이나 SQL로 데이터를 뽑아서 보기 좋게 만들기",
+                        "숫자가 의미하는 것을 찾아내고 설명하기",
+                        "그래프와 차트로 데이터를 시각화하기",
+                        "데이터를 보고 '왜 이런 일이 일어났는지' 분석하기",
+                        "경영진이나 팀에게 데이터 기반 제안하기",
+                        "A/B 테스트로 어떤 방법이 더 좋은지 확인하기"
+                    ]
+                },
+                "데이터 엔지니어": {
+                    "summary": "대용량 데이터가 잘 흐르도록 시스템을 만들고 관리하는 전문가입니다.",
+                    "tasks": [
+                        "여러 곳에서 데이터를 모아오는 파이프라인 만들기",
+                        "매일 자동으로 데이터가 처리되도록 시스템 구축하기",
+                        "엄청나게 많은 데이터를 빠르게 처리하는 프로그램 만들기",
+                        "실시간으로 들어오는 데이터를 처리하는 시스템 개발",
+                        "데이터를 안전하게 저장하고 쉽게 찾을 수 있게 정리하기",
+                        "클라우드(AWS, GCP)에서 데이터 시스템 운영하기",
+                        "데이터 품질을 체크하고 문제를 해결하기"
+                    ]
+                },
+                "DBA": {
+                    "summary": "회사의 중요한 데이터베이스를 안전하게 관리하는 전문가입니다.",
+                    "tasks": [
+                        "데이터베이스 설치하고 설정하기",
+                        "데이터베이스가 느려지지 않도록 성능 관리하기",
+                        "매일 데이터를 백업하고 문제 생기면 복구하기",
+                        "해킹이나 데이터 유출을 막기 위한 보안 설정",
+                        "데이터베이스에 얼마나 공간이 남았는지 확인하고 관리",
+                        "24시간 데이터베이스를 감시하고 문제 생기면 바로 해결",
+                        "개발자들이 데이터를 빠르게 조회할 수 있도록 도와주기"
+                    ]
+                },
+                "DB 엔지니어": {
+                    "summary": "데이터베이스를 설계하고 개발하는 전문가입니다.",
+                    "tasks": [
+                        "새로운 서비스에 필요한 데이터베이스 구조 설계하기",
+                        "데이터를 저장하고 꺼내는 프로그램(프로시저) 만들기",
+                        "오래된 데이터베이스를 새로운 시스템으로 옮기기",
+                        "느린 쿼리를 빠르게 만들기 위한 최적화 작업",
+                        "데이터베이스와 연결되는 API 개발하기",
+                        "관계형 DB와 NoSQL DB 중 적합한 것 선택하고 구현",
+                        "데이터가 정확하게 저장되고 있는지 검증하기"
+                    ]
+                },
+                "AI 개발자": {
+                    "summary": "인공지능 모델을 만들고 학습시키는 전문가입니다.",
+                    "tasks": [
+                        "머신러닝/딥러닝 알고리즘을 사용해 AI 모델 만들기",
+                        "AI가 학습할 데이터를 준비하고 정리하기",
+                        "모델이 잘 학습하도록 파라미터 조정하기",
+                        "텐서플로우, 파이토치 같은 도구로 모델 개발하기",
+                        "모델이 얼마나 정확한지 테스트하고 개선하기",
+                        "만든 AI를 실제 서비스에서 사용할 수 있게 만들기",
+                        "AI 모델이 계속 잘 작동하는지 모니터링하기"
+                    ]
+                },
+                "AI 엔지니어": {
+                    "summary": "AI 모델을 실제 서비스에서 잘 작동하도록 만드는 전문가입니다.",
+                    "tasks": [
+                        "AI 모델을 실제 서비스에 연결하는 시스템 구축",
+                        "무거운 모델을 가볍고 빠르게 만들기",
+                        "모바일이나 IoT 기기에서 AI가 작동하도록 최적화",
+                        "실시간으로 AI 예측 결과를 제공하는 시스템 개발",
+                        "여러 컴퓨터를 사용해 AI를 빠르게 학습시키기",
+                        "AI 모델의 버전을 관리하고 테스트하기",
+                        "GPU 서버를 효율적으로 관리하고 비용 절감하기"
+                    ]
+                },
+                "자바 개발자": {
+                    "summary": "자바 언어로 웹 애플리케이션과 시스템을 개발하는 전문가입니다.",
+                    "tasks": [
+                        "스프링 프레임워크로 웹 서비스 만들기",
+                        "사용자 요청을 처리하는 API 개발하기",
+                        "데이터베이스와 연결해서 정보 저장/조회하기",
+                        "프로그램이 잘 작동하는지 테스트 코드 작성하기",
+                        "여러 작업을 동시에 처리하는 프로그램 만들기",
+                        "메이븐/그래들로 프로젝트 빌드 관리하기",
+                        "다른 개발자와 함께 코드 리뷰하고 개선하기"
+                    ]
+                },
+                "백엔드 개발자": {
+                    "summary": "웹/앱 서비스의 서버 부분을 개발하는 전문가입니다.",
+                    "tasks": [
+                        "사용자 요청을 처리하는 서버 프로그램 만들기",
+                        "데이터베이스 설계하고 데이터 관리하기",
+                        "모바일 앱이나 웹이 사용할 API 만들기",
+                        "로그인, 회원가입 같은 인증 시스템 구현하기",
+                        "자주 사용하는 데이터를 빠르게 제공하는 캐시 시스템 구축",
+                        "여러 서비스를 연결하는 마이크로서비스 개발",
+                        "코드를 자동으로 테스트하고 배포하는 시스템 구축"
+                    ]
+                }
+            }
+            
+            # 현재 직업에 해당하는 설명 찾기
+            current_job_info = None
+            career_lower = final_state["career_name"].lower()
+            
+            for job_key, info in job_descriptions.items():
+                if job_key.lower() in career_lower or career_lower in job_key.lower():
+                    current_job_info = info
+                    break
+            
+            # 기본 설명 (매칭되는 직업이 없을 경우)
+            if not current_job_info:
+                current_job_info = {
+                    "summary": f"{final_state['career_name']}는 해당 분야의 전문 지식과 기술을 활용하여 업무를 수행하는 전문가입니다.",
+                    "tasks": [
+                        "해당 분야의 전문 지식을 활용한 업무 수행",
+                        "프로젝트 계획 수립 및 실행",
+                        "팀원들과의 협업 및 커뮤니케이션",
+                        "업무 관련 문서 작성 및 보고",
+                        "지속적인 학습 및 역량 개발",
+                        "품질 관리 및 개선 활동",
+                        "고객 요구사항 분석 및 대응"
+                    ]
+                }
+            
+            # 직업 설명 카드 표시
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        padding: 2rem; border-radius: 20px; color: white; 
+                        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3); margin-bottom: 2rem;">
+                <h4 style="margin-bottom: 1rem; font-size: 1.3rem;">
+                    <i class="fas fa-user-tie"></i> {final_state['career_name']}란?
+                </h4>
+                <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem;">
+                    {current_job_info['summary']}
+                </p>
+                <h5 style="margin-bottom: 1rem;">
+                    <i class="fas fa-tasks"></i> 주요 업무 (쉽게 설명하면)
+                </h5>
+                <div style="display: grid; gap: 0.8rem;">
+            """, unsafe_allow_html=True)
+            
+            for idx, task in enumerate(current_job_info['tasks'], 1):
+                st.markdown(f"""
+                    <div style="background: rgba(255, 255, 255, 0.1); padding: 0.8rem 1rem; 
+                                border-radius: 10px; display: flex; align-items: center;
+                                backdrop-filter: blur(10px);">
+                        <span style="background: rgba(255, 255, 255, 0.2); 
+                                     width: 30px; height: 30px; border-radius: 50%; 
+                                     display: flex; align-items: center; justify-content: center;
+                                     margin-right: 1rem; flex-shrink: 0;">
+                            {idx}
+                        </span>
+                        <span style="line-height: 1.5;">{task}</span>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("""
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
             # 연봉 정보 및 경력 경로
             st.markdown("---")
-            st.markdown("### 💼 직업 개요")
+            st.markdown("### 💰 연봉 및 커리어 패스")
             
             col1, col2 = st.columns([1, 1])
             
@@ -1716,7 +1881,7 @@ if search_button:
             
             # 장단점 상세 표시
             st.markdown("---")
-            st.markdown("### 📋 상세 분석 결과")
+            st.markdown("### 📋 장단점 분석")
             
             col1, col2 = st.columns(2)
             
@@ -1761,152 +1926,6 @@ if search_button:
                         """, unsafe_allow_html=True)
                 else:
                     st.write("단점 정보가 없습니다.")
-            
-            # 구체적인 업무 내용 표시
-            st.markdown("---")
-            st.markdown("### 💻 구체적인 업무 내용")
-            
-            # 직업별 구체적인 업무 정의
-            job_tasks = {
-                "데이터 분석가": [
-                    "비즈니스 데이터 수집 및 정제 작업",
-                    "SQL을 활용한 데이터 추출 및 가공",
-                    "Python/R을 이용한 통계 분석 수행",
-                    "대시보드 및 시각화 리포트 작성 (Tableau, Power BI)",
-                    "A/B 테스트 설계 및 결과 분석",
-                    "비즈니스 인사이트 도출 및 의사결정 지원",
-                    "데이터 품질 관리 및 검증"
-                ],
-                "데이터 엔지니어": [
-                    "데이터 파이프라인 설계 및 구축",
-                    "ETL/ELT 프로세스 개발 및 관리",
-                    "대용량 데이터 처리 시스템 구축 (Hadoop, Spark)",
-                    "실시간 데이터 스트리밍 처리 (Kafka, Flink)",
-                    "데이터 웨어하우스/레이크 아키텍처 설계",
-                    "클라우드 기반 데이터 인프라 구축 (AWS, GCP, Azure)",
-                    "데이터 품질 모니터링 시스템 개발"
-                ],
-                "DBA": [
-                    "데이터베이스 설치, 구성 및 업그레이드",
-                    "데이터베이스 성능 튜닝 및 최적화",
-                    "백업 및 복구 전략 수립 및 실행",
-                    "데이터베이스 보안 정책 수립 및 관리",
-                    "용량 계획 및 스토리지 관리",
-                    "데이터베이스 모니터링 및 장애 대응",
-                    "SQL 쿼리 최적화 지원"
-                ],
-                "DB 엔지니어": [
-                    "데이터베이스 스키마 설계 및 모델링",
-                    "저장 프로시저, 함수, 트리거 개발",
-                    "데이터베이스 마이그레이션 계획 및 실행",
-                    "인덱스 설계 및 쿼리 성능 최적화",
-                    "데이터베이스 연동 API 개발",
-                    "NoSQL 데이터베이스 설계 및 구현",
-                    "데이터 정합성 및 무결성 관리"
-                ],
-                "AI 개발자": [
-                    "머신러닝/딥러닝 모델 설계 및 개발",
-                    "데이터 전처리 및 특징 공학 (Feature Engineering)",
-                    "모델 학습 및 하이퍼파라미터 튜닝",
-                    "TensorFlow, PyTorch 등 프레임워크 활용",
-                    "모델 성능 평가 및 개선",
-                    "AI 서비스 API 개발 및 배포",
-                    "MLOps 파이프라인 구축"
-                ],
-                "AI 엔지니어": [
-                    "AI 모델 서빙 인프라 구축",
-                    "모델 경량화 및 최적화 (양자화, 프루닝)",
-                    "엣지 디바이스용 AI 모델 배포",
-                    "실시간 추론 시스템 개발",
-                    "분산 학습 환경 구축 및 관리",
-                    "AI 모델 버전 관리 및 A/B 테스트",
-                    "GPU/TPU 클러스터 관리 및 최적화"
-                ],
-                "자바 개발자": [
-                    "Spring Framework 기반 웹 애플리케이션 개발",
-                    "RESTful API 설계 및 구현",
-                    "JPA/Hibernate를 활용한 데이터 액세스 계층 개발",
-                    "단위 테스트 및 통합 테스트 작성 (JUnit, Mockito)",
-                    "멀티스레드 프로그래밍 및 동시성 제어",
-                    "Maven/Gradle 빌드 도구 활용",
-                    "코드 리뷰 및 리팩토링"
-                ],
-                "백엔드 개발자": [
-                    "서버 사이드 비즈니스 로직 구현",
-                    "데이터베이스 설계 및 쿼리 작성",
-                    "API 설계 및 문서화 (Swagger)",
-                    "인증/인가 시스템 구현 (JWT, OAuth)",
-                    "캐싱 전략 수립 및 구현 (Redis)",
-                    "마이크로서비스 아키텍처 설계",
-                    "CI/CD 파이프라인 구축 및 배포 자동화"
-                ]
-            }
-            
-            # 현재 직업에 해당하는 업무 찾기
-            current_tasks = []
-            career_lower = final_state["career_name"].lower()
-            
-            for job_key, tasks in job_tasks.items():
-                if job_key.lower() in career_lower or career_lower in job_key.lower():
-                    current_tasks = tasks
-                    break
-            
-            # 기본 업무 (매칭되는 직업이 없을 경우)
-            if not current_tasks:
-                current_tasks = [
-                    "해당 분야의 전문 지식을 활용한 업무 수행",
-                    "프로젝트 계획 수립 및 실행",
-                    "팀원들과의 협업 및 커뮤니케이션",
-                    "업무 관련 문서 작성 및 보고",
-                    "지속적인 학습 및 역량 개발",
-                    "품질 관리 및 개선 활동",
-                    "고객 요구사항 분석 및 대응"
-                ]
-            
-            # 업무 내용을 2열로 표시
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("""
-                <div style="background: linear-gradient(135deg, #e6f3ff 0%, #c5e0ff 100%); 
-                            padding: 1.5rem; border-radius: 15px; margin-bottom: 1rem;">
-                    <h5 style="color: #2196F3; margin-bottom: 1rem;">
-                        <i class="fas fa-tasks"></i> 주요 업무
-                    </h5>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                for idx, task in enumerate(current_tasks[:len(current_tasks)//2], 1):
-                    st.markdown(f"""
-                    <div style="background: white; padding: 1rem; margin: 0.5rem 0; 
-                                border-radius: 8px; border-left: 4px solid #2196F3;
-                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <span style="color: #2196F3; font-weight: bold;">
-                            <i class="fas fa-chevron-right"></i> {idx}.
-                        </span> {task}
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            with col2:
-                st.markdown("""
-                <div style="background: linear-gradient(135deg, #e6f3ff 0%, #c5e0ff 100%); 
-                            padding: 1.5rem; border-radius: 15px; margin-bottom: 1rem;">
-                    <h5 style="color: #2196F3; margin-bottom: 1rem;">
-                        <i class="fas fa-clipboard-list"></i> 추가 업무
-                    </h5>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                for idx, task in enumerate(current_tasks[len(current_tasks)//2:], len(current_tasks)//2 + 1):
-                    st.markdown(f"""
-                    <div style="background: white; padding: 1rem; margin: 0.5rem 0; 
-                                border-radius: 8px; border-left: 4px solid #2196F3;
-                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <span style="color: #2196F3; font-weight: bold;">
-                            <i class="fas fa-chevron-right"></i> {idx}.
-                        </span> {task}
-                    </div>
-                    """, unsafe_allow_html=True)
             
             # 실시간 채용 공고 섹션
             st.markdown("---")
@@ -2200,4 +2219,3 @@ st.markdown(f"""
     </p>
 </div>
 """, unsafe_allow_html=True)
-
