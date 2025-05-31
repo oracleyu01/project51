@@ -1,5 +1,3 @@
-
-
 import streamlit as st
 
 # 페이지 설정 (반드시 첫 번째로 실행)
@@ -524,33 +522,40 @@ class CareerInfoCrawler:
             'valid_pros_cons': 0,
             'api_errors': 0
         }
-    
-    def remove_html_tags(self, text):
-        """HTML 태그 제거"""
-        text = BeautifulSoup(text, "html.parser").get_text()
-        text = re.sub(r'<[^>]+>', '', text)
-        return text.strip()
-    
-    def search_career_info(self, query, display=20):
-        """네이버 검색 API를 통해 직업 정보 검색"""
-        url = "https://openapi.naver.com/v1/search/blog"
         
-        # 직업 관련 검색어 조합
-        search_queries = [
-            f"{query} 직업 장단점",
-            f"{query} 현실 단점",
-            f"{query} 실제 장점",
-            f"{query} 연봉 워라밸",
-            f"{query} 직업 후기"
-        ]
-        
-        all_results = []
-        
-        for search_query in search_queries:
-            params = {
-                "query": search_query,
-                "display": 10,
-                "sort": "sim"
+        # 직업별 미리 정의된 데이터
+        self.predefined_career_data = {
+            "데이터 분석가": {
+                "pros": [
+                    "데이터 기반 의사결정을 통한 비즈니스 가치 창출",
+                    "다양한 도구와 기술을 배울 수 있는 기회",
+                    "높은 수요와 좋은 처우",
+                    "재택근무 등 유연한 근무 환경",
+                    "다양한 산업 분야로의 이직 가능성"
+                ],
+                "cons": [
+                    "끊임없는 새로운 기술 학습 필요",
+                    "데이터 품질 이슈로 인한 스트레스",
+                    "비즈니스와 기술 사이의 커뮤니케이션 어려움",
+                    "반복적인 리포트 작성 업무",
+                    "성과를 정량화하기 어려운 경우가 많음"
+                ]
+            },
+            "데이터 엔지니어": {
+                "pros": [
+                    "높은 수요와 좋은 처우",
+                    "대용량 데이터 처리의 성취감",
+                    "클라우드 기술 전문성 확보",
+                    "데이터 기반 의사결정의 핵심 역할",
+                    "다양한 도메인 경험 가능"
+                ],
+                "cons": [
+                    "24/7 파이프라인 모니터링",
+                    "복잡한 기술 스택 관리",
+                    "데이터 품질 이슈 대응",
+                    "가시적 성과 부족",
+                    "지속적인 최적화 압박"
+                ]
             },
             "자바 개발자": {
                 "pros": [
@@ -615,6 +620,35 @@ class CareerInfoCrawler:
                     "실시간 서빙의 기술적 난이도",
                     "빠른 기술 변화 속도"
                 ]
+            }
+        }
+    
+    def remove_html_tags(self, text):
+        """HTML 태그 제거"""
+        text = BeautifulSoup(text, "html.parser").get_text()
+        text = re.sub(r'<[^>]+>', '', text)
+        return text.strip()
+    
+    def search_career_info(self, query, display=20):
+        """네이버 검색 API를 통해 직업 정보 검색"""
+        url = "https://openapi.naver.com/v1/search/blog"
+        
+        # 직업 관련 검색어 조합
+        search_queries = [
+            f"{query} 직업 장단점",
+            f"{query} 현실 단점",
+            f"{query} 실제 장점",
+            f"{query} 연봉 워라밸",
+            f"{query} 직업 후기"
+        ]
+        
+        all_results = []
+        
+        for search_query in search_queries:
+            params = {
+                "query": search_query,
+                "display": 10,
+                "sort": "sim"
             }
             
             try:
@@ -778,23 +812,7 @@ class CareerInfoCrawler:
             "DBA": {"min": 4500, "avg": 7000, "max": 11000},
             "DB 엔지니어": {"min": 4500, "avg": 6500, "max": 10000},
             "AI 개발자": {"min": 5500, "avg": 8000, "max": 15000},
-            "AI 엔지니어": {"min": 6000, "avg": 9000, "max": 18000            },
-            "데이터 엔지니어": {
-                "pros": [
-                    "높은 수요와 좋은 처우",
-                    "대용량 데이터 처리의 성취감",
-                    "클라우드 기술 전문성 확보",
-                    "데이터 기반 의사결정의 핵심 역할",
-                    "다양한 도메인 경험 가능"
-                ],
-                "cons": [
-                    "24/7 파이프라인 모니터링",
-                    "복잡한 기술 스택 관리",
-                    "데이터 품질 이슈 대응",
-                    "가시적 성과 부족",
-                    "지속적인 최적화 압박"
-                ]
-            },
+            "AI 엔지니어": {"min": 6000, "avg": 9000, "max": 18000},
             "자바 개발자": {"min": 4000, "avg": 6000, "max": 10000},
             "백엔드 개발자": {"min": 4500, "avg": 6500, "max": 11000}
         }
@@ -1183,109 +1201,43 @@ def crawl_web(state: CareerState) -> CareerState:
         HumanMessage(content=f"🌐 웹에서 '{career_name}' 정보 수집 시작...")
     )
     
-    # API 키가 없을 때 샘플 데이터
-    if not OPENAI_API_KEY:
-        # 직업별 샘플 데이터
-        sample_data = {
-            "데이터 분석가": {
+    # API 키가 없을 때 또는 미리 정의된 데이터를 사용
+    if not OPENAI_API_KEY or career_name in crawler.predefined_career_data:
+        # 미리 정의된 데이터 사용
+        if career_name in crawler.predefined_career_data:
+            career_data = crawler.predefined_career_data[career_name]
+        else:
+            # 기본 데이터
+            career_data = {
                 "pros": [
-                    "데이터 기반 의사결정을 통한 비즈니스 가치 창출",
-                    "다양한 도구와 기술을 배울 수 있는 기회",
-                    "높은 수요와 좋은 처우",
-                    "재택근무 등 유연한 근무 환경",
-                    "다양한 산업 분야로의 이직 가능성"
+                    "전문성을 개발할 수 있습니다",
+                    "안정적인 수입이 가능합니다",
+                    "경력 개발 기회가 있습니다",
+                    "사회적 기여를 할 수 있습니다",
+                    "네트워크를 확장할 수 있습니다"
                 ],
                 "cons": [
-                    "끊임없는 새로운 기술 학습 필요",
-                    "데이터 품질 이슈로 인한 스트레스",
-                    "비즈니스와 기술 사이의 커뮤니케이션 어려움",
-                    "반복적인 리포트 작성 업무",
-                    "성과를 정량화하기 어려운 경우가 많음"
-                ]
-            },
-            "AI 개발자": {
-                "pros": [
-                    "최첨단 기술을 다루는 흥미로운 업무",
-                    "높은 연봉과 좋은 복지 혜택",
-                    "글로벌 기업 취업 기회",
-                    "연구와 개발을 병행할 수 있음",
-                    "사회 변화를 이끄는 혁신적인 일"
-                ],
-                "cons": [
-                    "빠른 기술 변화에 대한 지속적 학습 압박",
-                    "모델 성능 개선에 대한 압박감",
-                    "컴퓨팅 리소스 제약으로 인한 한계",
-                    "설명 가능성과 윤리적 문제 고민",
-                    "경쟁이 매우 치열한 분야"
-                ]
-            },
-            "백엔드 개발자": {
-                "pros": [
-                    "안정적이고 높은 수요가 있는 직군",
-                    "명확한 커리어 패스와 성장 가능성",
-                    "다양한 기술 스택 경험 가능",
-                    "문제 해결의 성취감이 큼",
-                    "원격 근무 기회가 많음"
-                ],
-                "cons": [
-                    "24/7 서비스 운영으로 인한 온콜 대응",
-                    "레거시 코드 유지보수의 어려움",
-                    "프론트엔드에 비해 가시적 성과 부족",
-                    "지속적인 기술 부채 관리 필요",
-                    "디버깅과 트러블슈팅에 많은 시간 소요"
-                ]
-            },
-            "자바 개발자": {
-                "pros": [
-                    "안정적인 기술 스택",
-                    "대기업과 금융권 수요 높음",
-                    "체계적인 개발 프로세스",
-                    "풍부한 레퍼런스와 커뮤니티",
-                    "Spring 생태계의 강력함"
-                ],
-                "cons": [
-                    "레거시 시스템 유지보수",
-                    "보수적인 기술 환경",
-                    "긴 빌드 시간",
-                    "무거운 프레임워크",
-                    "최신 기술 도입 어려움"
+                    "업무 스트레스가 있을 수 있습니다",
+                    "워라밸 유지가 어려울 수 있습니다",
+                    "경쟁이 치열할 수 있습니다",
+                    "지속적인 자기계발이 필요합니다",
+                    "초기 연봉이 낮을 수 있습니다"
                 ]
             }
-        }
-        
-        # 기본 데이터
-        default_data = {
-            "pros": [
-                "전문성을 개발할 수 있습니다",
-                "안정적인 수입이 가능합니다",
-                "경력 개발 기회가 있습니다",
-                "사회적 기여를 할 수 있습니다",
-                "네트워크를 확장할 수 있습니다"
-            ],
-            "cons": [
-                "업무 스트레스가 있을 수 있습니다",
-                "워라밸 유지가 어려울 수 있습니다",
-                "경쟁이 치열할 수 있습니다",
-                "지속적인 자기계발이 필요합니다",
-                "초기 연봉이 낮을 수 있습니다"
-            ]
-        }
-        
-        # 직업명에 맞는 데이터 찾기
-        career_data = default_data
-        for key, data in sample_data.items():
-            if key in career_name:
-                career_data = data
-                break
         
         state["pros"] = career_data["pros"]
         state["cons"] = career_data["cons"]
         state["salary_info"] = crawler.get_career_salary_info(career_name)
         state["career_path"] = crawler.get_career_path(career_name)
         
-        state["messages"].append(
-            AIMessage(content="📌 샘플 데이터를 표시합니다 (API 키 설정 필요)")
-        )
+        if not OPENAI_API_KEY:
+            state["messages"].append(
+                AIMessage(content="📌 샘플 데이터를 표시합니다 (API 키 설정 필요)")
+            )
+        else:
+            state["messages"].append(
+                AIMessage(content="📌 미리 정의된 직업 데이터를 사용합니다")
+            )
         return state
     
     # 실제 크롤링 로직
@@ -1635,390 +1587,6 @@ if search_button:
                 else:
                     st.write("단점 정보가 없습니다.")
             
-            # 구체적인 업무 내용 표시
-            st.markdown("---")
-            st.markdown("### 💻 구체적인 업무 내용")
-            
-            # 직업별 구체적인 업무 정의
-            job_tasks = {
-                "데이터 분석가": [
-                    "비즈니스 데이터 수집 및 정제 작업",
-                    "SQL을 활용한 데이터 추출 및 가공",
-                    "Python/R을 이용한 통계 분석 수행",
-                    "대시보드 및 시각화 리포트 작성 (Tableau, Power BI)",
-                    "A/B 테스트 설계 및 결과 분석",
-                    "비즈니스 인사이트 도출 및 의사결정 지원",
-                    "데이터 품질 관리 및 검증"
-                ],
-                "데이터 엔지니어": [
-                    "데이터 파이프라인 설계 및 구축",
-                    "ETL/ELT 프로세스 개발 및 관리",
-                    "대용량 데이터 처리 시스템 구축 (Hadoop, Spark)",
-                    "실시간 데이터 스트리밍 처리 (Kafka, Flink)",
-                    "데이터 웨어하우스/레이크 아키텍처 설계",
-                    "클라우드 기반 데이터 인프라 구축 (AWS, GCP, Azure)",
-                    "데이터 품질 모니터링 시스템 개발"
-                ],
-                "DBA": [
-                    "데이터베이스 설치, 구성 및 업그레이드",
-                    "데이터베이스 성능 튜닝 및 최적화",
-                    "백업 및 복구 전략 수립 및 실행",
-                    "데이터베이스 보안 정책 수립 및 관리",
-                    "용량 계획 및 스토리지 관리",
-                    "데이터베이스 모니터링 및 장애 대응",
-                    "SQL 쿼리 최적화 지원"
-                ],
-                "DB 엔지니어": [
-                    "데이터베이스 스키마 설계 및 모델링",
-                    "저장 프로시저, 함수, 트리거 개발",
-                    "데이터베이스 마이그레이션 계획 및 실행",
-                    "인덱스 설계 및 쿼리 성능 최적화",
-                    "데이터베이스 연동 API 개발",
-                    "NoSQL 데이터베이스 설계 및 구현",
-                    "데이터 정합성 및 무결성 관리"
-                ],
-                "AI 개발자": [
-                    "머신러닝/딥러닝 모델 설계 및 개발",
-                    "데이터 전처리 및 특징 공학 (Feature Engineering)",
-                    "모델 학습 및 하이퍼파라미터 튜닝",
-                    "TensorFlow, PyTorch 등 프레임워크 활용",
-                    "모델 성능 평가 및 개선",
-                    "AI 서비스 API 개발 및 배포",
-                    "MLOps 파이프라인 구축"
-                ],
-                "AI 엔지니어": [
-                    "AI 모델 서빙 인프라 구축",
-                    "모델 경량화 및 최적화 (양자화, 프루닝)",
-                    "엣지 디바이스용 AI 모델 배포",
-                    "실시간 추론 시스템 개발",
-                    "분산 학습 환경 구축 및 관리",
-                    "AI 모델 버전 관리 및 A/B 테스트",
-                    "GPU/TPU 클러스터 관리 및 최적화"
-                ],
-                "자바 개발자": [
-                    "Spring Framework 기반 웹 애플리케이션 개발",
-                    "RESTful API 설계 및 구현",
-                    "JPA/Hibernate를 활용한 데이터 액세스 계층 개발",
-                    "단위 테스트 및 통합 테스트 작성 (JUnit, Mockito)",
-                    "멀티스레드 프로그래밍 및 동시성 제어",
-                    "Maven/Gradle 빌드 도구 활용",
-                    "코드 리뷰 및 리팩토링"
-                ],
-                "백엔드 개발자": [
-                    "서버 사이드 비즈니스 로직 구현",
-                    "데이터베이스 설계 및 쿼리 작성",
-                    "API 설계 및 문서화 (Swagger)",
-                    "인증/인가 시스템 구현 (JWT, OAuth)",
-                    "캐싱 전략 수립 및 구현 (Redis)",
-                    "마이크로서비스 아키텍처 설계",
-                    "CI/CD 파이프라인 구축 및 배포 자동화"
-                ]
-            }
-            
-            # 현재 직업에 해당하는 업무 찾기
-            current_tasks = []
-            career_lower = final_state["career_name"].lower()
-            
-            for job_key, tasks in job_tasks.items():
-                if job_key.lower() in career_lower or career_lower in job_key.lower():
-                    current_tasks = tasks
-                    break
-            
-            # 기본 업무 (매칭되는 직업이 없을 경우)
-            if not current_tasks:
-                current_tasks = [
-                    "해당 분야의 전문 지식을 활용한 업무 수행",
-                    "프로젝트 계획 수립 및 실행",
-                    "팀원들과의 협업 및 커뮤니케이션",
-                    "업무 관련 문서 작성 및 보고",
-                    "지속적인 학습 및 역량 개발",
-                    "품질 관리 및 개선 활동",
-                    "고객 요구사항 분석 및 대응"
-                ]
-            
-            # 업무 내용을 2열로 표시
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("""
-                <div style="background: linear-gradient(135deg, #e6f3ff 0%, #c5e0ff 100%); 
-                            padding: 1.5rem; border-radius: 15px; margin-bottom: 1rem;">
-                    <h5 style="color: #2196F3; margin-bottom: 1rem;">
-                        <i class="fas fa-tasks"></i> 주요 업무
-                    </h5>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                for idx, task in enumerate(current_tasks[:len(current_tasks)//2], 1):
-                    st.markdown(f"""
-                    <div style="background: white; padding: 1rem; margin: 0.5rem 0; 
-                                border-radius: 8px; border-left: 4px solid #2196F3;
-                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <span style="color: #2196F3; font-weight: bold;">
-                            <i class="fas fa-chevron-right"></i> {idx}.
-                        </span> {task}
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            with col2:
-                st.markdown("""
-                <div style="background: linear-gradient(135deg, #e6f3ff 0%, #c5e0ff 100%); 
-                            padding: 1.5rem; border-radius: 15px; margin-bottom: 1rem;">
-                    <h5 style="color: #2196F3; margin-bottom: 1rem;">
-                        <i class="fas fa-clipboard-list"></i> 추가 업무
-                    </h5>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                for idx, task in enumerate(current_tasks[len(current_tasks)//2:], len(current_tasks)//2 + 1):
-                    st.markdown(f"""
-                    <div style="background: white; padding: 1rem; margin: 0.5rem 0; 
-                                border-radius: 8px; border-left: 4px solid #2196F3;
-                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <span style="color: #2196F3; font-weight: bold;">
-                            <i class="fas fa-chevron-right"></i> {idx}.
-                        </span> {task}
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            # 추가 인사이트
-            st.markdown("---")
-            st.markdown("### 💡 직업 인사이트")
-            
-            # 직업별 맞춤 인사이트
-            career_insights = {
-                "데이터 분석가": {
-                    "suitable_for": [
-                        "논리적이고 분석적인 사고를 좋아하는 사람",
-                        "숫자와 통계에 관심이 많은 사람",
-                        "비즈니스 인사이트 도출에 흥미가 있는 사람",
-                        "새로운 도구와 기술 학습을 즐기는 사람",
-                        "커뮤니케이션 능력이 뛰어난 사람"
-                    ],
-                    "considerations": [
-                        "반복적인 리포트 작업에 대한 인내심 필요",
-                        "비즈니스와 기술 양쪽 역량이 모두 필요함",
-                        "데이터 품질 이슈로 인한 스트레스 관리 필요",
-                        "끊임없는 기술 변화에 대한 적응력 필요",
-                        "성과를 정량화하기 어려운 경우가 많음"
-                    ]
-                },
-                "데이터 엔지니어": {
-                    "suitable_for": [
-                        "대용량 데이터 처리에 관심이 있는 사람",
-                        "시스템 설계와 아키텍처를 좋아하는 사람",
-                        "자동화와 효율성을 추구하는 사람",
-                        "문제 해결 능력이 뛰어난 사람",
-                        "백엔드 기술에 흥미가 있는 사람"
-                    ],
-                    "considerations": [
-                        "24/7 데이터 파이프라인 관리 부담",
-                        "장애 대응을 위한 온콜 근무 가능성",
-                        "복잡한 기술 스택 학습 필요",
-                        "가시적 성과가 잘 드러나지 않을 수 있음",
-                        "지속적인 시스템 모니터링 스트레스"
-                    ]
-                },
-                "DBA": {
-                    "suitable_for": [
-                        "안정성과 신뢰성을 중시하는 사람",
-                        "세심하고 꼼꼼한 성격의 사람",
-                        "위기 상황 대처 능력이 좋은 사람",
-                        "체계적인 업무 처리를 선호하는 사람",
-                        "인프라 운영에 관심이 있는 사람"
-                    ],
-                    "considerations": [
-                        "24/7 장애 대응 준비 필요",
-                        "실수에 대한 심리적 부담감이 큼",
-                        "야간 및 주말 작업 가능성",
-                        "새로운 기술보다 안정성 우선시",
-                        "반복적인 모니터링 업무의 지루함"
-                    ]
-                },
-                "DB 엔지니어": {
-                    "suitable_for": [
-                        "데이터 모델링에 흥미가 있는 사람",
-                        "성능 최적화를 즐기는 사람",
-                        "논리적 사고력이 뛰어난 사람",
-                        "세부사항에 주의를 기울이는 사람",
-                        "백엔드 개발에 관심이 있는 사람"
-                    ],
-                    "considerations": [
-                        "복잡한 쿼리 최적화에 대한 압박",
-                        "레거시 시스템 마이그레이션 스트레스",
-                        "다양한 DB 기술 학습 부담",
-                        "개발팀과의 지속적인 협업 필요",
-                        "성능 이슈에 대한 책임감"
-                    ]
-                },
-                "AI 개발자": {
-                    "suitable_for": [
-                        "수학과 통계에 강한 사람",
-                        "연구와 실험을 좋아하는 사람",
-                        "최신 기술 트렌드에 민감한 사람",
-                        "창의적 문제 해결을 즐기는 사람",
-                        "지속적인 학습에 열정이 있는 사람"
-                    ],
-                    "considerations": [
-                        "빠른 기술 변화에 대한 학습 압박",
-                        "모델 성능 개선에 대한 지속적 요구",
-                        "높은 컴퓨팅 리소스 비용 문제",
-                        "설명 가능한 AI에 대한 고민 필요",
-                        "경쟁이 매우 치열한 분야"
-                    ]
-                },
-                "AI 엔지니어": {
-                    "suitable_for": [
-                        "시스템 최적화에 관심이 많은 사람",
-                        "MLOps와 인프라를 좋아하는 사람",
-                        "실시간 처리 시스템에 흥미가 있는 사람",
-                        "대규모 시스템 운영 경험을 원하는 사람",
-                        "DevOps 문화를 선호하는 사람"
-                    ],
-                    "considerations": [
-                        "모델 서빙 인프라 관리 복잡성",
-                        "GPU 클러스터 운영 비용 부담",
-                        "모델 버전 관리의 어려움",
-                        "실시간 추론 성능 보장 압박",
-                        "다양한 프레임워크 호환성 문제"
-                    ]
-                },
-                "자바 개발자": {
-                    "suitable_for": [
-                        "안정적인 기술 스택을 선호하는 사람",
-                        "대규모 엔터프라이즈 환경을 원하는 사람",
-                        "체계적인 개발 프로세스를 좋아하는 사람",
-                        "Spring 생태계에 관심이 있는 사람",
-                        "금융/공공 도메인에 관심이 있는 사람"
-                    ],
-                    "considerations": [
-                        "레거시 시스템 유지보수 부담",
-                        "보수적인 기술 스택의 한계",
-                        "긴 빌드 시간과 무거운 프레임워크",
-                        "엔터프라이즈 환경의 경직성",
-                        "최신 기술 도입의 어려움"
-                    ]
-                },
-                "백엔드 개발자": {
-                    "suitable_for": [
-                        "서버 사이드 로직에 흥미가 있는 사람",
-                        "시스템 설계와 아키텍처를 좋아하는 사람",
-                        "API 설계에 관심이 많은 사람",
-                        "성능 최적화를 즐기는 사람",
-                        "다양한 기술 스택을 경험하고 싶은 사람"
-                    ],
-                    "considerations": [
-                        "24/7 서비스 운영에 대한 부담",
-                        "프론트엔드 대비 가시성 부족",
-                        "복잡한 비즈니스 로직 관리",
-                        "레거시 코드 리팩토링 압박",
-                        "지속적인 기술 부채 해결 필요"
-                    ]
-                }
-            }
-            
-            # 현재 직업에 맞는 인사이트 찾기
-            current_insights = {"suitable_for": [], "considerations": []}
-            career_lower = final_state["career_name"].lower()
-            
-            for job_key, insights in career_insights.items():
-                if job_key.lower() in career_lower or career_lower in job_key.lower():
-                    current_insights = insights
-                    break
-            
-            # 기본 인사이트 (매칭되는 직업이 없을 경우)
-            if not current_insights["suitable_for"]:
-                current_insights = {
-                    "suitable_for": [
-                        "해당 분야에 열정이 있는 사람",
-                        "지속적인 학습을 즐기는 사람",
-                        "문제 해결 능력이 뛰어난 사람",
-                        "팀워크를 중시하는 사람",
-                        "책임감이 강한 사람"
-                    ],
-                    "considerations": [
-                        "업무에 대한 전문성 개발 필요",
-                        "지속적인 자기계발 요구",
-                        "업무 스트레스 관리 능력 필요",
-                        "워라밸 유지를 위한 노력 필요",
-                        "경력 개발 계획 수립 필요"
-                    ]
-                }
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown(f"""
-                <div class="career-insight">
-                    <h5 style="color: #667eea; margin-bottom: 1rem;">
-                        <i class="fas fa-star"></i> 이 직업이 맞는 사람
-                    </h5>
-                    <ul style="margin: 0; padding-left: 1.5rem;">
-                """, unsafe_allow_html=True)
-                
-                for suitable in current_insights["suitable_for"]:
-                    st.markdown(f"<li>{suitable}</li>", unsafe_allow_html=True)
-                
-                st.markdown("</ul></div>", unsafe_allow_html=True)
-            
-            with col2:
-                st.markdown(f"""
-                <div class="career-insight">
-                    <h5 style="color: #667eea; margin-bottom: 1rem;">
-                        <i class="fas fa-exclamation-triangle"></i> 고려할 점
-                    </h5>
-                    <ul style="margin: 0; padding-left: 1.5rem;">
-                """, unsafe_allow_html=True)
-                
-                for consideration in current_insights["considerations"]:
-                    st.markdown(f"<li>{consideration}</li>", unsafe_allow_html=True)
-                
-                st.markdown("</ul></div>", unsafe_allow_html=True)
-            
-            # 관련 직업 추천
-            st.markdown("---")
-            st.markdown("""
-            <div style="text-align: center; margin: 2rem 0;">
-                <h4 style="color: #667eea; margin-bottom: 1rem;">
-                    <i class="fas fa-link"></i> 관련 직업 추천
-                </h4>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # 직업별 관련 직업
-            related_careers = {
-                "데이터 분석가": ["비즈니스 애널리스트", "데이터 사이언티스트", "프로덕트 애널리스트", "마케팅 애널리스트"],
-                "데이터 엔지니어": ["빅데이터 엔지니어", "데이터 아키텍트", "클라우드 엔지니어", "MLOps 엔지니어"],
-                "DBA": ["데이터 아키텍트", "DB 컨설턴트", "시스템 관리자", "클라우드 DBA"],
-                "DB 엔지니어": ["백엔드 개발자", "데이터 엔지니어", "솔루션 아키텍트", "DBA"],
-                "AI 개발자": ["머신러닝 엔지니어", "딥러닝 리서처", "컴퓨터 비전 엔지니어", "NLP 엔지니어"],
-                "AI 엔지니어": ["MLOps 엔지니어", "AI 플랫폼 엔지니어", "모델 최적화 엔지니어", "엣지 AI 엔지니어"],
-                "자바 개발자": ["스프링 개발자", "안드로이드 개발자", "풀스택 개발자", "엔터프라이즈 개발자"],
-                "백엔드 개발자": ["DevOps 엔지니어", "풀스택 개발자", "API 개발자", "시스템 아키텍트"]
-            }
-            
-            # 현재 직업과 관련된 직업 찾기
-            current_related = []
-            for key, values in related_careers.items():
-                if key in final_state["career_name"]:
-                    current_related = values
-                    break
-            
-            if not current_related:
-                current_related = ["컨설턴트", "프리랜서", "창업가", "연구원"]
-            
-            cols = st.columns(4)
-            for idx, (col, related) in enumerate(zip(cols, current_related)):
-                with col:
-                    st.markdown(f"""
-                    <div style="background: white; padding: 1rem; border-radius: 10px; 
-                                text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                                transition: all 0.3s ease; cursor: pointer;">
-                        <i class="fas fa-briefcase" style="color: #667eea; font-size: 1.5rem;"></i>
-                        <p style="margin: 0.5rem 0; font-weight: 600;">{related}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
             # 출처 (웹 크롤링인 경우)
             if final_state["sources"]:
                 with st.expander("📚 출처 보기"):
@@ -2031,341 +1599,6 @@ if search_button:
                             </a>
                         </div>
                         """, unsafe_allow_html=True)
-            
-            # 신입 채용 공고 섹션
-            st.markdown("---")
-            st.markdown(f"""
-            <div style="text-align: center; margin: 2rem 0;">
-                <h3 style="color: {text_color}; margin-bottom: 1rem;">
-                    <i class="fas fa-briefcase"></i> 신입 채용 공고
-                </h3>
-                <p style="color: {text_color}; opacity: 0.7; font-size: 0.9rem;">
-                    현재 채용 중인 신입 포지션입니다
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # 직업별 채용 공고 샘플
-            job_postings = {
-                "데이터 분석가": [
-                    {
-                        "company": "네이버",
-                        "title": "데이터 분석가 신입 채용",
-                        "requirements": ["SQL 활용 능력", "Python/R 기초", "통계학 전공 우대"],
-                        "salary": "4,000~4,500만원",
-                        "location": "판교",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "카카오",
-                        "title": "주니어 데이터 애널리스트",
-                        "requirements": ["데이터 분석 프로젝트 경험", "시각화 도구 경험", "영어 가능자"],
-                        "salary": "4,200~4,800만원",
-                        "location": "판교",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "쿠팡",
-                        "title": "비즈니스 데이터 분석가",
-                        "requirements": ["커머스 도메인 이해", "A/B 테스트 경험", "SQL 필수"],
-                        "salary": "4,500~5,000만원",
-                        "location": "서울",
-                        "type": "정규직"
-                    }
-                ],
-                "데이터 엔지니어": [
-                    {
-                        "company": "삼성전자",
-                        "title": "빅데이터 엔지니어 신입",
-                        "requirements": ["컴퓨터공학 전공", "Hadoop/Spark 경험", "Java/Python"],
-                        "salary": "5,000~5,500만원",
-                        "location": "수원",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "LG CNS",
-                        "title": "데이터 파이프라인 엔지니어",
-                        "requirements": ["ETL 경험", "클라우드 플랫폼 이해", "Linux 활용"],
-                        "salary": "4,800~5,300만원",
-                        "location": "마곡",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "11번가",
-                        "title": "주니어 데이터 엔지니어",
-                        "requirements": ["실시간 처리 관심", "Kafka 경험 우대", "Python 필수"],
-                        "salary": "5,000~5,500만원",
-                        "location": "판교",
-                        "type": "정규직"
-                    }
-                ],
-                "DBA": [
-                    {
-                        "company": "신한은행",
-                        "title": "데이터베이스 관리자 신입",
-                        "requirements": ["Oracle/MySQL", "DB 관련 자격증", "운영체제 이해"],
-                        "salary": "4,500~5,000만원",
-                        "location": "중구",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "넥슨",
-                        "title": "게임 DB 관리자",
-                        "requirements": ["대용량 DB 관심", "24/7 운영 이해", "Linux 필수"],
-                        "salary": "4,800~5,300만원",
-                        "location": "판교",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "NHN",
-                        "title": "주니어 DBA",
-                        "requirements": ["DB 성능 튜닝 관심", "백업/복구 지식", "스크립팅 가능"],
-                        "salary": "4,700~5,200만원",
-                        "location": "판교",
-                        "type": "정규직"
-                    }
-                ],
-                "DB 엔지니어": [
-                    {
-                        "company": "카카오뱅크",
-                        "title": "DB 엔지니어 신입",
-                        "requirements": ["DB 설계 경험", "SQL 튜닝", "금융 도메인 우대"],
-                        "salary": "4,800~5,300만원",
-                        "location": "판교",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "SK텔레콤",
-                        "title": "데이터베이스 개발자",
-                        "requirements": ["DB 모델링", "프로시저 개발", "NoSQL 경험"],
-                        "salary": "4,700~5,200만원",
-                        "location": "을지로",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "인터파크",
-                        "title": "DB 개발 엔지니어",
-                        "requirements": ["전자상거래 DB 이해", "대용량 처리", "성능 최적화"],
-                        "salary": "4,500~5,000만원",
-                        "location": "강남",
-                        "type": "정규직"
-                    }
-                ],
-                "AI 개발자": [
-                    {
-                        "company": "네이버 클로바",
-                        "title": "AI 연구개발 신입",
-                        "requirements": ["딥러닝 프레임워크", "논문 구현 경험", "석사 우대"],
-                        "salary": "5,500~6,500만원",
-                        "location": "성남",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "카카오브레인",
-                        "title": "머신러닝 엔지니어",
-                        "requirements": ["PyTorch/TensorFlow", "모델 학습 경험", "수학/통계 지식"],
-                        "salary": "5,800~6,800만원",
-                        "location": "판교",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "현대자동차",
-                        "title": "자율주행 AI 개발자",
-                        "requirements": ["컴퓨터 비전", "딥러닝 모델링", "C++ 가능자"],
-                        "salary": "6,000~7,000만원",
-                        "location": "서울",
-                        "type": "정규직"
-                    }
-                ],
-                "AI 엔지니어": [
-                    {
-                        "company": "삼성 리서치",
-                        "title": "AI 플랫폼 엔지니어",
-                        "requirements": ["모델 서빙 경험", "MLOps 이해", "쿠버네티스"],
-                        "salary": "6,000~7,000만원",
-                        "location": "서초",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "LG AI연구원",
-                        "title": "AI 시스템 엔지니어",
-                        "requirements": ["모델 최적화", "엣지 AI", "C++/Python"],
-                        "salary": "5,800~6,800만원",
-                        "location": "마곡",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "업스테이지",
-                        "title": "MLOps 엔지니어",
-                        "requirements": ["ML 파이프라인", "모델 배포", "클라우드 플랫폼"],
-                        "salary": "6,500~7,500만원",
-                        "location": "강남",
-                        "type": "정규직"
-                    }
-                ],
-                "백엔드 개발자": [
-                    {
-                        "company": "토스",
-                        "title": "서버 개발자 신입",
-                        "requirements": ["Java/Kotlin", "Spring Boot", "CS 기초"],
-                        "salary": "5,000~5,500만원",
-                        "location": "강남",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "배달의민족",
-                        "title": "백엔드 엔지니어",
-                        "requirements": ["MSA 이해", "API 설계", "DB 기초"],
-                        "salary": "4,800~5,300만원",
-                        "location": "송파",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "라인",
-                        "title": "서버사이드 개발자",
-                        "requirements": ["Java/Go", "대용량 트래픽 관심", "Linux"],
-                        "salary": "5,200~5,800만원",
-                        "location": "분당",
-                        "type": "정규직"
-                    }
-                ],
-                "자바 개발자": [
-                    {
-                        "company": "삼성SDS",
-                        "title": "Java 개발자 신입",
-                        "requirements": ["Java", "Spring Framework", "전공자 우대"],
-                        "salary": "4,500~5,000만원",
-                        "location": "잠실",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "KB국민은행",
-                        "title": "IT 개발직 신입",
-                        "requirements": ["Java/Spring", "금융 IT 관심", "정보처리기사"],
-                        "salary": "4,800~5,200만원",
-                        "location": "여의도",
-                        "type": "정규직"
-                    },
-                    {
-                        "company": "SK C&C",
-                        "title": "엔터프라이즈 개발자",
-                        "requirements": ["Java EE", "Oracle DB", "SI 프로젝트 이해"],
-                        "salary": "4,200~4,800만원",
-                        "location": "판교",
-                        "type": "정규직"
-                    }
-                ]
-            }
-            
-            # 기본 채용 공고
-            default_postings = [
-                {
-                    "company": "테크 스타트업",
-                    "title": f"{final_state['career_name']} 신입 채용",
-                    "requirements": ["관련 전공 또는 부트캠프 수료", "열정과 성장 의지", "팀워크 중시"],
-                    "salary": "3,800~4,500만원",
-                    "location": "강남",
-                    "type": "정규직"
-                },
-                {
-                    "company": "IT 중견기업",
-                    "title": f"주니어 {final_state['career_name']}",
-                    "requirements": ["기초 프로그래밍 역량", "커뮤니케이션 능력", "문제해결능력"],
-                    "salary": "4,000~4,800만원",
-                    "location": "판교",
-                    "type": "정규직"
-                },
-                {
-                    "company": "외국계 IT기업",
-                    "title": f"{final_state['career_name']} (신입/경력)",
-                    "requirements": ["영어 커뮤니케이션 가능", "컴퓨터 관련 전공", "Git 사용 경험"],
-                    "salary": "5,000만원~",
-                    "location": "삼성",
-                    "type": "정규직"
-                }
-            ]
-            
-            # 현재 직업에 맞는 채용 공고 찾기
-            current_postings = default_postings
-            career_lower = final_state["career_name"].lower()
-            
-            for job_key, postings in job_postings.items():
-                if job_key.lower() in career_lower or career_lower in job_key.lower():
-                    current_postings = postings
-                    break
-            
-            # 채용 공고 카드 표시
-            for posting in current_postings:
-                st.markdown(f"""
-                <div class="job-posting-card" style="background: {card_bg}; border-radius: 15px; padding: 2rem; 
-                            margin-bottom: 1.5rem; box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-                            border-left: 5px solid #667eea;">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                        <div>
-                            <h4 style="color: {text_color}; margin: 0;">{posting['company']}</h4>
-                            <h5 style="color: #667eea; margin: 0.5rem 0;">{posting['title']}</h5>
-                        </div>
-                        <div style="text-align: right;">
-                            <span style="background: #667eea; color: white; padding: 0.3rem 0.8rem; 
-                                         border-radius: 20px; font-size: 0.9rem; font-weight: 600;">
-                                {posting['type']}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <p style="margin: 0.3rem 0; color: {text_color}; opacity: 0.8;">
-                                <i class="fas fa-won-sign" style="color: #28a745; margin-right: 0.5rem;"></i>
-                                <strong>연봉:</strong> {posting['salary']}
-                            </p>
-                            <p style="margin: 0.3rem 0; color: {text_color}; opacity: 0.8;">
-                                <i class="fas fa-map-marker-alt" style="color: #dc3545; margin-right: 0.5rem;"></i>
-                                <strong>위치:</strong> {posting['location']}
-                            </p>
-                        </div>
-                        <div>
-                            <p style="margin: 0.3rem 0; color: {text_color}; opacity: 0.8;">
-                                <i class="fas fa-check-circle" style="color: #2196F3; margin-right: 0.5rem;"></i>
-                                <strong>요구사항:</strong>
-                            </p>
-                            <ul style="margin: 0.2rem 0 0 1.5rem; padding: 0; color: {text_color}; opacity: 0.8;">
-                                {"".join([f"<li style='margin: 0.2rem 0;'>{req}</li>" for req in posting['requirements']])}
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div style="text-align: right; margin-top: 1rem;">
-                        <button class="apply-button" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                                       color: white; border: none; padding: 0.5rem 1.5rem; 
-                                       border-radius: 25px; cursor: pointer; font-weight: 600;
-                                       transition: all 0.3s ease;">
-                            지원하기 →
-                        </button>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # 채용 정보 안내
-            st.markdown(f"""
-            <div style="background: {"#1a1a2e" if st.session_state.dark_mode else "#f0f4ff"}; padding: 1.5rem; border-radius: 10px; 
-                        margin-top: 2rem; text-align: center;">
-                <p style="color: {text_color}; margin: 0;">
-                    <i class="fas fa-info-circle"></i> 
-                    위 채용 공고는 예시이며, 실제 채용 정보는 각 기업 채용 페이지에서 확인하세요.
-                </p>
-                <div style="margin-top: 1rem;">
-                    <a href="https://www.saramin.co.kr" target="_blank" 
-                       style="margin: 0 0.5rem; color: #667eea;">사람인</a> |
-                    <a href="https://www.jobkorea.co.kr" target="_blank" 
-                       style="margin: 0 0.5rem; color: #667eea;">잡코리아</a> |
-                    <a href="https://www.wanted.co.kr" target="_blank" 
-                       style="margin: 0 0.5rem; color: #667eea;">원티드</a> |
-                    <a href="https://programmers.co.kr/job" target="_blank" 
-                       style="margin: 0 0.5rem; color: #667eea;">프로그래머스</a>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
         else:
             st.error(f"'{search_term}'에 대한 정보를 찾을 수 없습니다.")
 
@@ -2405,4 +1638,3 @@ st.markdown(f"""
     </p>
 </div>
 """, unsafe_allow_html=True)
-
