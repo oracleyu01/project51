@@ -1,7 +1,4 @@
-```python
-"""
-직업군 장단점 분석 앱 - LangGraph 버전
-"""
+
 
 import streamlit as st
 
@@ -2408,4 +2405,4 @@ st.markdown(f"""
     </p>
 </div>
 """, unsafe_allow_html=True)
-```
+
