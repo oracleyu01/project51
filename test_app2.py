@@ -474,7 +474,7 @@ with st.sidebar:
     st.markdown("### 🎯 SQL 마스터 되기!")
     st.markdown("**데이터 분석의 시작**")
     st.markdown("**실무 SQL 완전정복**")
-    st.markdown("🔥 인프런 인기 강의")
+    st.markdown("🔥온라인으로 편하게 수강하세요")
     
     # 링크 버튼
     st.link_button(
