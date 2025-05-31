@@ -1,4 +1,3 @@
-
 import streamlit as st
 
 # 페이지 설정 (반드시 첫 번째로 실행)
@@ -1664,4 +1663,3 @@ st.markdown(f"""
     </p>
 </div>
 """, unsafe_allow_html=True)
-```
