@@ -96,6 +96,8 @@ if 'total_searches' not in st.session_state:
     st.session_state.total_searches = 0
 if 'saved_careers' not in st.session_state:
     st.session_state.saved_careers = 0
+if 'selected_tab' not in st.session_state:
+    st.session_state.selected_tab = 0
 
 # CSS 스타일 - 다크모드 지원
 if st.session_state.dark_mode:
@@ -466,13 +468,71 @@ st.markdown(f"""
         transform: translateX(5px);
         box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
     }}
+    
+    /* MBTI 관련 스타일 */
+    .mbti-card {{
+        background: linear-gradient(135deg, #e6f2ff 0%, #cce5ff 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin: 1rem 0;
+        border: none;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        transition: transform 0.3s ease;
+    }}
+    
+    .mbti-card:hover {{
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    }}
+    
+    .mbti-type-badge {{
+        display: inline-block;
+        background: {header_gradient};
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: bold;
+        margin: 0.25rem;
+        transition: all 0.3s ease;
+    }}
+    
+    .mbti-type-badge:hover {{
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }}
+    
+    /* 탭 스타일 개선 */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 8px;
+        background-color: rgba(0,0,0,0.03);
+        padding: 0.5rem;
+        border-radius: 15px;
+    }}
+    
+    .stTabs [data-baseweb="tab"] {{
+        height: 50px;
+        padding: 0 2rem;
+        background-color: transparent;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }}
+    
+    .stTabs [data-baseweb="tab"]:hover {{
+        background-color: rgba(102, 126, 234, 0.1);
+    }}
+    
+    .stTabs [aria-selected="true"] {{
+        background: {header_gradient};
+        color: white !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
 # 사이드바 설정
 with st.sidebar:
     # 인프런 SQL 강의 광고 배너 - 간단한 버전
-    st.markdown("### 🎯 SQL 마스터 되기")
+    st.markdown("### 🎯 SQL 마스터 되기!")
     st.markdown("**데이터 분석의 시작**")
     st.markdown("**실무 SQL 완전정복**")
     st.markdown("🔥온라인으로 편하게 수강하세요")
@@ -549,6 +609,100 @@ st.markdown("""
     </p>
 </div>
 """, unsafe_allow_html=True)
+
+# ========================
+# MBTI 직업 추천 데이터
+# ========================
+
+MBTI_CAREER_MAPPING = {
+    "INTJ": {
+        "careers": ["데이터 분석가", "데이터 엔지니어", "AI 개발자", "백엔드 개발자"],
+        "description": "전략적 사고와 독립적인 성향으로 복잡한 시스템을 설계하고 문제를 해결하는 데 탁월합니다.",
+        "strengths": ["체계적인 사고", "장기적 계획 수립", "독립적 업무 처리", "혁신적 아이디어"]
+    },
+    "INTP": {
+        "careers": ["AI 엔지니어", "데이터 분석가", "백엔드 개발자", "DB 엔지니어"],
+        "description": "논리적이고 분석적인 사고로 복잡한 기술 문제를 해결하는 것을 즐깁니다.",
+        "strengths": ["논리적 분석", "창의적 문제해결", "이론적 이해", "기술적 호기심"]
+    },
+    "ENTJ": {
+        "careers": ["데이터 엔지니어", "AI 개발자", "DBA", "백엔드 개발자"],
+        "description": "리더십과 결단력으로 대규모 프로젝트를 주도하고 팀을 이끄는 데 적합합니다.",
+        "strengths": ["프로젝트 관리", "전략적 의사결정", "팀 리더십", "목표 지향적"]
+    },
+    "ENTP": {
+        "careers": ["AI 개발자", "데이터 분석가", "백엔드 개발자", "AI 엔지니어"],
+        "description": "혁신적이고 도전적인 성향으로 새로운 기술을 탐구하고 적용하는 것을 좋아합니다.",
+        "strengths": ["혁신적 사고", "빠른 학습", "다양한 관점", "기술 트렌드 파악"]
+    },
+    "INFJ": {
+        "careers": ["데이터 분석가", "AI 개발자", "DB 엔지니어"],
+        "description": "통찰력과 창의성으로 데이터에서 의미있는 패턴을 찾고 인사이트를 도출합니다.",
+        "strengths": ["패턴 인식", "창의적 해결책", "사용자 공감", "세부사항 주의"]
+    },
+    "INFP": {
+        "careers": ["AI 개발자", "데이터 분석가", "백엔드 개발자"],
+        "description": "가치 중심적이고 창의적인 성향으로 의미있는 제품을 만드는 데 열정을 가집니다.",
+        "strengths": ["창의성", "사용자 중심 사고", "윤리적 고려", "독립적 작업"]
+    },
+    "ENFJ": {
+        "careers": ["데이터 분석가", "AI 개발자", "백엔드 개발자"],
+        "description": "소통 능력과 공감 능력으로 비즈니스와 기술을 연결하는 역할에 적합합니다.",
+        "strengths": ["팀워크", "커뮤니케이션", "멘토링", "프로젝트 조율"]
+    },
+    "ENFP": {
+        "careers": ["AI 개발자", "데이터 분석가", "백엔드 개발자"],
+        "description": "열정적이고 창의적인 성향으로 혁신적인 솔루션을 개발하는 데 강점이 있습니다.",
+        "strengths": ["창의적 아이디어", "빠른 적응", "팀 분위기 조성", "다양한 시도"]
+    },
+    "ISTJ": {
+        "careers": ["DBA", "DB 엔지니어", "백엔드 개발자", "데이터 엔지니어"],
+        "description": "체계적이고 신뢰할 수 있는 성향으로 안정적인 시스템 운영과 관리에 탁월합니다.",
+        "strengths": ["체계적 관리", "안정성 추구", "규칙 준수", "꼼꼼한 문서화"]
+    },
+    "ISFJ": {
+        "careers": ["DBA", "DB 엔지니어", "데이터 분석가"],
+        "description": "세심하고 책임감 있는 성향으로 데이터 품질과 시스템 안정성을 보장합니다.",
+        "strengths": ["세부사항 관리", "품질 보증", "사용자 지원", "안정적 운영"]
+    },
+    "ESTJ": {
+        "careers": ["DBA", "데이터 엔지니어", "백엔드 개발자", "DB 엔지니어"],
+        "description": "실행력과 조직력으로 복잡한 시스템을 효율적으로 관리하고 운영합니다.",
+        "strengths": ["프로젝트 실행", "효율적 관리", "명확한 커뮤니케이션", "결과 중심"]
+    },
+    "ESFJ": {
+        "careers": ["데이터 분석가", "백엔드 개발자", "DB 엔지니어"],
+        "description": "협력적이고 사람 중심적인 성향으로 팀 프로젝트와 고객 요구사항 분석에 강합니다.",
+        "strengths": ["팀 협업", "고객 이해", "프로세스 개선", "갈등 해결"]
+    },
+    "ISTP": {
+        "careers": ["백엔드 개발자", "데이터 엔지니어", "DB 엔지니어", "자바 개발자"],
+        "description": "실용적이고 문제해결 능력이 뛰어나 기술적 이슈를 효과적으로 해결합니다.",
+        "strengths": ["기술적 문제해결", "실용적 접근", "독립적 작업", "시스템 최적화"]
+    },
+    "ISFP": {
+        "careers": ["AI 개발자", "백엔드 개발자", "데이터 분석가"],
+        "description": "유연하고 적응력이 뛰어나며, 창의적인 솔루션을 조용히 구현합니다.",
+        "strengths": ["유연한 사고", "세심한 구현", "품질 중시", "조용한 혁신"]
+    },
+    "ESTP": {
+        "careers": ["데이터 엔지니어", "백엔드 개발자", "자바 개발자", "DBA"],
+        "description": "실행력이 강하고 현실적인 성향으로 즉각적인 문제 해결과 구현에 탁월합니다.",
+        "strengths": ["빠른 실행", "실시간 문제해결", "실용적 접근", "위기 대응"]
+    },
+    "ESFP": {
+        "careers": ["데이터 분석가", "AI 개발자", "백엔드 개발자"],
+        "description": "적응력이 뛰어나고 사람들과의 상호작용을 중시하여 협업 프로젝트에 적합합니다.",
+        "strengths": ["팀 활력", "빠른 적응", "실용적 해결책", "긍정적 분위기"]
+    }
+}
+
+# ========================
+# 탭 생성
+# ========================
+tab1, tab2 = st.tabs(["🔍 직업 검색", "🧬 MBTI 직업 추천"])
+
+with tab1:
 
 # ========================
 # LangGraph State 정의
@@ -1507,220 +1661,323 @@ career_app = create_career_workflow()
 # Streamlit UI
 # ========================
 
-# 검색 섹션
-col1, col2, col3 = st.columns([1, 5, 1])
+with tab1:
+    # 검색 섹션
+    col1, col2, col3 = st.columns([1, 5, 1])
 
-with col2:
-    st.markdown('<div class="search-section">', unsafe_allow_html=True)
-    
-    # 제목
-    st.markdown("""
-    <h2 class="search-title">
-        어떤 직업을 알아보고 계신가요?
-    </h2>
-    """, unsafe_allow_html=True)
-    
-    # 북마크에서 선택된 항목이 있으면 자동 입력
-    default_value = ""
-    if 'selected_bookmark' in st.session_state:
-        default_value = st.session_state.selected_bookmark
-        del st.session_state.selected_bookmark
-    elif 'search_query' in st.session_state:
-        default_value = st.session_state.search_query
-    
-    # 검색창
-    st.markdown('<div class="big-search">', unsafe_allow_html=True)
-    career_name = st.text_input(
-        "직업명 입력",
-        placeholder="예: 개발자, 의사, 교사, 디자이너, 변호사",
-        value=default_value,
-        label_visibility="collapsed",
-        key="career_search_input"
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # 버튼들
-    st.markdown('<div class="search-buttons" style="margin-top: 1.8rem;">', unsafe_allow_html=True)
-    col_btn1, col_btn2, col_btn3 = st.columns([3, 2.5, 0.5])
-    with col_btn1:
-        search_button = st.button("🔍 검색하기", use_container_width=True, type="primary")
-    with col_btn2:
-        show_process = st.checkbox("🔧 프로세스 보기", value=True)
-    with col_btn3:
-        if career_name and st.button("📌", help="북마크에 추가", key="bookmark_btn"):
-            if career_name not in st.session_state.bookmarks:
-                st.session_state.bookmarks.append(career_name)
-                st.success("북마크에 추가되었습니다!")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # 인기 검색어
-    st.markdown("""
-    <div class="popular-search-buttons" style="text-align: center; margin-top: 2rem;">
-        <p style="opacity: 0.7; font-size: 1.2rem; margin-bottom: 1rem; color: #666; font-weight: 500;">인기 직업</p>
-    """, unsafe_allow_html=True)
-    
-    popular_careers = ["데이터 분석가", "데이터 엔지니어", "DBA", "DB 엔지니어", "AI 개발자", "AI 엔지니어", "자바 개발자", "백엔드 개발자"]
-    cols = st.columns(4)
-    for idx, (col, career) in enumerate(zip(cols * 2, popular_careers)):
-        with col:
-            if st.button(
-                career, 
-                key=f"popular_{idx}", 
-                use_container_width=True,
-                help=f"{career} 검색하기"
-            ):
-                st.session_state.search_query = career
-                st.rerun()
-    
-    st.markdown('</div></div>', unsafe_allow_html=True)
+    with col2:
+        st.markdown('<div class="search-section">', unsafe_allow_html=True)
+        
+        # 제목
+        st.markdown("""
+        <h2 class="search-title">
+            어떤 직업을 알아보고 계신가요?
+        </h2>
+        """, unsafe_allow_html=True)
+        
+        # 북마크에서 선택된 항목이 있으면 자동 입력
+        default_value = ""
+        if 'selected_bookmark' in st.session_state:
+            default_value = st.session_state.selected_bookmark
+            del st.session_state.selected_bookmark
+        elif 'search_query' in st.session_state:
+            default_value = st.session_state.search_query
+        
+        # 검색창
+        st.markdown('<div class="big-search">', unsafe_allow_html=True)
+        career_name = st.text_input(
+            "직업명 입력",
+            placeholder="예: 개발자, 의사, 교사, 디자이너, 변호사",
+            value=default_value,
+            label_visibility="collapsed",
+            key="career_search_input"
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # 버튼들
+        st.markdown('<div class="search-buttons" style="margin-top: 1.8rem;">', unsafe_allow_html=True)
+        col_btn1, col_btn2, col_btn3 = st.columns([3, 2.5, 0.5])
+        with col_btn1:
+            search_button = st.button("🔍 검색하기", use_container_width=True, type="primary")
+        with col_btn2:
+            show_process = st.checkbox("🔧 프로세스 보기", value=True)
+        with col_btn3:
+            if career_name and st.button("📌", help="북마크에 추가", key="bookmark_btn"):
+                if career_name not in st.session_state.bookmarks:
+                    st.session_state.bookmarks.append(career_name)
+                    st.success("북마크에 추가되었습니다!")
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # 인기 검색어
+        st.markdown("""
+        <div class="popular-search-buttons" style="text-align: center; margin-top: 2rem;">
+            <p style="opacity: 0.7; font-size: 1.2rem; margin-bottom: 1rem; color: #666; font-weight: 500;">인기 직업</p>
+        """, unsafe_allow_html=True)
+        
+        popular_careers = ["데이터 분석가", "데이터 엔지니어", "DBA", "DB 엔지니어", "AI 개발자", "AI 엔지니어", "자바 개발자", "백엔드 개발자"]
+        cols = st.columns(4)
+        for idx, (col, career) in enumerate(zip(cols * 2, popular_careers)):
+            with col:
+                if st.button(
+                    career, 
+                    key=f"popular_{idx}", 
+                    use_container_width=True,
+                    help=f"{career} 검색하기"
+                ):
+                    st.session_state.search_query = career
+                    st.rerun()
+        
+        st.markdown('</div></div>', unsafe_allow_html=True)
 
-# 검색 실행
-if search_button:
-    # 인기 검색어로 선택된 경우 해당 검색어 사용
-    if 'search_query' in st.session_state and st.session_state.search_query:
-        search_term = st.session_state.search_query
-        st.session_state.search_query = ""
-    else:
-        search_term = career_name
-    
-    if search_term:
-        # 검색 통계 증가
-        st.session_state.total_searches += 1
-        
-        loading_placeholder = show_loading_animation()
-        
-        # LangGraph 실행
-        initial_state = {
-            "career_name": search_term,
-            "search_method": "",
-            "results": {},
-            "pros": [],
-            "cons": [],
-            "sources": [],
-            "salary_info": {},
-            "career_path": [],
-            "messages": [],
-            "error": ""
-        }
-        
-        # 워크플로우 실행
-        final_state = career_app.invoke(initial_state)
-        
-        # 로딩 애니메이션 제거
-        loading_placeholder.empty()
-        
-        # 프로세스 로그 표시
-        if show_process and final_state["messages"]:
-            with st.expander("🔧 검색 프로세스", expanded=False):
-                for msg in final_state["messages"]:
-                    if isinstance(msg, HumanMessage):
-                        st.write(f"👤 {msg.content}")
-                    else:
-                        st.write(f"🤖 {msg.content}")
-        
-        # 결과 표시
-        if final_state["pros"] or final_state["cons"]:
-            # 검색 정보
-            st.markdown(f"""
-            <div class="process-info fade-in">
-                <strong><i class="fas fa-info-circle"></i> 검색 방법:</strong> {
-                    '데이터베이스' if final_state["search_method"] == "database" else '웹 크롤링'
-                } | 
-                <strong><i class="fas fa-thumbs-up"></i> 장점:</strong> {len(final_state["pros"])}개 | 
-                <strong><i class="fas fa-thumbs-down"></i> 단점:</strong> {len(final_state["cons"])}개
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # 연봉 정보 및 경력 경로
-            st.markdown("---")
-            st.markdown("### 💼 직업 개요")
-            
-            col1, col2 = st.columns([1, 1])
-            
-            with col1:
-                # 연봉 차트
-                if final_state.get("salary_info"):
-                    salary_chart = create_salary_chart(final_state["salary_info"], final_state["career_name"])
-                    st.plotly_chart(salary_chart, use_container_width=True)
-            
-            with col2:
-                # 경력 경로
-                if final_state.get("career_path"):
-                    career_timeline = create_career_path_timeline(final_state["career_path"])
-                    st.plotly_chart(career_timeline, use_container_width=True)
-            
-            # 장단점 차트 및 워드클라우드
-            st.markdown("---")
-            
-            # 워드클라우드 표시
-            display_wordclouds(final_state["pros"], final_state["cons"])
-            
-            # 장단점 통계 차트
-            pros_cons_chart = create_pros_cons_chart(len(final_state["pros"]), len(final_state["cons"]))
-            st.plotly_chart(pros_cons_chart, use_container_width=True)
-            
-            # 장단점 상세 표시
-            st.markdown("---")
-            st.markdown("### 📋 상세 분석 결과")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("""
-                <div class="pros-section fade-in">
-                    <h3 style="color: #28a745; margin-bottom: 1.5rem;">
-                        <i class="fas fa-check-circle"></i> 장점
-                    </h3>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if final_state["pros"]:
-                    for idx, pro in enumerate(final_state["pros"], 1):
-                        st.markdown(f"""
-                        <div class="pros-item">
-                            <span style="color: #28a745; font-weight: bold;">
-                                <i class="fas fa-check"></i> {idx}.
-                            </span> {pro}
-                        </div>
-                        """, unsafe_allow_html=True)
-                else:
-                    st.write("장점 정보가 없습니다.")
-            
-            with col2:
-                st.markdown("""
-                <div class="cons-section fade-in">
-                    <h3 style="color: #dc3545; margin-bottom: 1.5rem;">
-                        <i class="fas fa-times-circle"></i> 단점
-                    </h3>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if final_state["cons"]:
-                    for idx, con in enumerate(final_state["cons"], 1):
-                        st.markdown(f"""
-                        <div class="cons-item">
-                            <span style="color: #dc3545; font-weight: bold;">
-                                <i class="fas fa-times"></i> {idx}.
-                            </span> {con}
-                        </div>
-                        """, unsafe_allow_html=True)
-                else:
-                    st.write("단점 정보가 없습니다.")
-            
-            # 출처 (웹 크롤링인 경우)
-            if final_state["sources"]:
-                with st.expander("📚 출처 보기"):
-                    for idx, source in enumerate(final_state["sources"], 1):
-                        st.markdown(f"""
-                        <div style="padding: 0.5rem; margin: 0.3rem 0;">
-                            <i class="fas fa-link"></i> {idx}. 
-                            <a href="{source['link']}" target="_blank" style="color: {secondary_text};">
-                                {source['title']}
-                            </a>
-                        </div>
-                        """, unsafe_allow_html=True)
+    # 검색 실행
+    if search_button:
+        # 인기 검색어로 선택된 경우 해당 검색어 사용
+        if 'search_query' in st.session_state and st.session_state.search_query:
+            search_term = st.session_state.search_query
+            st.session_state.search_query = ""
         else:
-            st.error(f"'{search_term}'에 대한 정보를 찾을 수 없습니다.")
+            search_term = career_name
+        
+        if search_term:
+            # 검색 통계 증가
+            st.session_state.total_searches += 1
+            
+            loading_placeholder = show_loading_animation()
+            
+            # LangGraph 실행
+            initial_state = {
+                "career_name": search_term,
+                "search_method": "",
+                "results": {},
+                "pros": [],
+                "cons": [],
+                "sources": [],
+                "salary_info": {},
+                "career_path": [],
+                "messages": [],
+                "error": ""
+            }
+            
+            # 워크플로우 실행
+            final_state = career_app.invoke(initial_state)
+            
+            # 로딩 애니메이션 제거
+            loading_placeholder.empty()
+            
+            # 프로세스 로그 표시
+            if show_process and final_state["messages"]:
+                with st.expander("🔧 검색 프로세스", expanded=False):
+                    for msg in final_state["messages"]:
+                        if isinstance(msg, HumanMessage):
+                            st.write(f"👤 {msg.content}")
+                        else:
+                            st.write(f"🤖 {msg.content}")
+            
+            # 결과 표시
+            if final_state["pros"] or final_state["cons"]:
+                # 검색 정보
+                st.markdown(f"""
+                <div class="process-info fade-in">
+                    <strong><i class="fas fa-info-circle"></i> 검색 방법:</strong> {
+                        '데이터베이스' if final_state["search_method"] == "database" else '웹 크롤링'
+                    } | 
+                    <strong><i class="fas fa-thumbs-up"></i> 장점:</strong> {len(final_state["pros"])}개 | 
+                    <strong><i class="fas fa-thumbs-down"></i> 단점:</strong> {len(final_state["cons"])}개
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # 연봉 정보 및 경력 경로
+                st.markdown("---")
+                st.markdown("### 💼 직업 개요")
+                
+                col1, col2 = st.columns([1, 1])
+                
+                with col1:
+                    # 연봉 차트
+                    if final_state.get("salary_info"):
+                        salary_chart = create_salary_chart(final_state["salary_info"], final_state["career_name"])
+                        st.plotly_chart(salary_chart, use_container_width=True)
+                
+                with col2:
+                    # 경력 경로
+                    if final_state.get("career_path"):
+                        career_timeline = create_career_path_timeline(final_state["career_path"])
+                        st.plotly_chart(career_timeline, use_container_width=True)
+                
+                # 장단점 차트 및 워드클라우드
+                st.markdown("---")
+                
+                # 워드클라우드 표시
+                display_wordclouds(final_state["pros"], final_state["cons"])
+                
+                # 장단점 통계 차트
+                pros_cons_chart = create_pros_cons_chart(len(final_state["pros"]), len(final_state["cons"]))
+                st.plotly_chart(pros_cons_chart, use_container_width=True)
+                
+                # 장단점 상세 표시
+                st.markdown("---")
+                st.markdown("### 📋 상세 분석 결과")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("""
+                    <div class="pros-section fade-in">
+                        <h3 style="color: #28a745; margin-bottom: 1.5rem;">
+                            <i class="fas fa-check-circle"></i> 장점
+                        </h3>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if final_state["pros"]:
+                        for idx, pro in enumerate(final_state["pros"], 1):
+                            st.markdown(f"""
+                            <div class="pros-item">
+                                <span style="color: #28a745; font-weight: bold;">
+                                    <i class="fas fa-check"></i> {idx}.
+                                </span> {pro}
+                            </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.write("장점 정보가 없습니다.")
+                
+                with col2:
+                    st.markdown("""
+                    <div class="cons-section fade-in">
+                        <h3 style="color: #dc3545; margin-bottom: 1.5rem;">
+                            <i class="fas fa-times-circle"></i> 단점
+                        </h3>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if final_state["cons"]:
+                        for idx, con in enumerate(final_state["cons"], 1):
+                            st.markdown(f"""
+                            <div class="cons-item">
+                                <span style="color: #dc3545; font-weight: bold;">
+                                    <i class="fas fa-times"></i> {idx}.
+                                </span> {con}
+                            </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.write("단점 정보가 없습니다.")
+                
+                # 출처 (웹 크롤링인 경우)
+                if final_state["sources"]:
+                    with st.expander("📚 출처 보기"):
+                        for idx, source in enumerate(final_state["sources"], 1):
+                            st.markdown(f"""
+                            <div style="padding: 0.5rem; margin: 0.3rem 0;">
+                                <i class="fas fa-link"></i> {idx}. 
+                                <a href="{source['link']}" target="_blank" style="color: {secondary_text};">
+                                    {source['title']}
+                                </a>
+                            </div>
+                            """, unsafe_allow_html=True)
+            else:
+                st.error(f"'{search_term}'에 대한 정보를 찾을 수 없습니다.")
+
+with tab2:
+    # MBTI 직업 추천 섹션
+    st.markdown("""
+    <div style="text-align: center; padding: 2rem;">
+        <h2 style="color: #667eea; margin-bottom: 1rem;">
+            <i class="fas fa-dna"></i> MBTI 맞춤 직업 추천
+        </h2>
+        <p style="font-size: 1.1rem; color: #666;">
+            당신의 MBTI 성격 유형에 맞는 IT 직업을 추천해드립니다
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 3, 1])
+    
+    with col2:
+        # MBTI 선택
+        mbti_types = sorted(MBTI_CAREER_MAPPING.keys())
+        selected_mbti = st.selectbox(
+            "MBTI 유형을 선택하세요",
+            options=mbti_types,
+            format_func=lambda x: f"{x} - {MBTI_CAREER_MAPPING[x]['description'].split('.')[0]}",
+            key="mbti_selector"
+        )
+        
+        if st.button("🎯 직업 추천받기", use_container_width=True, type="primary", key="mbti_recommend"):
+            if selected_mbti:
+                mbti_data = MBTI_CAREER_MAPPING[selected_mbti]
+                
+                # 결과 표시
+                st.markdown("---")
+                
+                # MBTI 설명
+                st.markdown(f"""
+                <div class="career-insight fade-in" style="text-align: center;">
+                    <h3 style="color: #667eea; margin-bottom: 1rem;">
+                        {selected_mbti} 유형 분석
+                    </h3>
+                    <p style="font-size: 1.1rem; line-height: 1.6;">
+                        {mbti_data['description']}
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # 강점
+                st.markdown("""
+                <div class="pros-section fade-in" style="margin-top: 2rem;">
+                    <h4 style="color: #28a745; margin-bottom: 1rem;">
+                        <i class="fas fa-star"></i> 주요 강점
+                    </h4>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                cols = st.columns(4)
+                for idx, strength in enumerate(mbti_data['strengths']):
+                    with cols[idx % 4]:
+                        st.markdown(f"""
+                        <div style="background: #f0f8ff; padding: 1rem; border-radius: 10px; 
+                                    text-align: center; min-height: 80px; display: flex; 
+                                    align-items: center; justify-content: center;">
+                            <strong style="color: #28a745;">{strength}</strong>
+                        </div>
+                        """, unsafe_allow_html=True)
+                
+                # 추천 직업
+                st.markdown("""
+                <div style="margin-top: 2rem;">
+                    <h3 style="text-align: center; color: #667eea; margin-bottom: 2rem;">
+                        <i class="fas fa-briefcase"></i> 추천 직업
+                    </h3>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                for idx, career in enumerate(mbti_data['careers'], 1):
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.markdown(f"""
+                        <div class="search-card fade-in" style="padding: 1.5rem; margin-bottom: 1rem;">
+                            <h4 style="color: #667eea; margin-bottom: 0.5rem;">
+                                {idx}. {career}
+                            </h4>
+                            <p style="color: #666; margin: 0;">
+                                {selected_mbti} 유형의 {', '.join(mbti_data['strengths'][:2])} 특성이 
+                                {career} 직무에 필요한 역량과 잘 맞습니다.
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with col2:
+                        if st.button(f"상세 분석", key=f"mbti_career_{idx}"):
+                            st.session_state.search_query = career
+                            st.session_state.selected_tab = 0  # 첫 번째 탭으로 이동
+                            st.rerun()
+                
+                # 추가 팁
+                st.markdown("""
+                <div class="process-info fade-in" style="margin-top: 2rem;">
+                    <strong><i class="fas fa-lightbulb"></i> 💡 Tip:</strong>
+                    MBTI는 참고용 가이드입니다. 실제 직업 선택 시에는 개인의 관심사, 
+                    가치관, 능력, 경험 등을 종합적으로 고려해주세요.
+                </div>
+                """, unsafe_allow_html=True)
 
 # 하단 정보
 st.markdown("---")
