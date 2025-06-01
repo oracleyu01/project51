@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
 # 페이지 설정 (반드시 첫 번째로 실행)
 st.set_page_config(
@@ -471,7 +472,7 @@ st.markdown(f"""
 # 사이드바 설정
 with st.sidebar:
     # 인프런 SQL 강의 광고 배너 - 간단한 버전
-    st.markdown("### ⛰️ 모든 IT 직종의 공통 과목 SQL")
+    st.markdown("### 🎯 SQL 마스터 되기!")
     st.markdown("**데이터 분석의 시작**")
     st.markdown("**실무 SQL 완전정복**")
     st.markdown("🔥온라인으로 편하게 수강하세요")
@@ -481,6 +482,34 @@ with st.sidebar:
         "수강하러 가기 →",
         "https://inf.run/R9Te3",
         use_container_width=True
+    )
+    
+    st.markdown("---")
+    
+    # 쿠팡 파트너스 광고
+    st.markdown("### 🛒 추천 상품")
+    st.markdown("**IT 전문가를 위한 필수템**")
+    
+    # iframe을 HTML로 삽입
+    components.html(
+        """
+        <div style="text-align: center; 
+                    padding: 10px; 
+                    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+                    border-radius: 10px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <iframe src="https://coupa.ng/ciwmbt" 
+                    width="120" 
+                    height="240" 
+                    frameborder="0" 
+                    scrolling="no" 
+                    referrerpolicy="unsafe-url" 
+                    browsingtopics
+                    style="margin: 0 auto;">
+            </iframe>
+        </div>
+        """,
+        height=280
     )
     
     st.markdown("---")
@@ -1497,7 +1526,7 @@ with col2:
     st.markdown('<div class="big-search">', unsafe_allow_html=True)
     career_name = st.text_input(
         "직업명 입력",
-        placeholder="예: 데이터 분석가, 데이터 엔지니어, DBA 등",
+        placeholder="예: 개발자, 의사, 교사, 디자이너, 변호사",
         value=default_value,
         label_visibility="collapsed",
         key="career_search_input"
