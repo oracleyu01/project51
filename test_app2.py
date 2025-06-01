@@ -547,25 +547,26 @@ with st.sidebar:
     st.markdown("---")
     
     # 쿠팡 파트너스 광고
-    st.markdown("### 📚 데이터 전문가 추천 도서")
-    st.markdown("**🎯 DBA & 데이터 엔지니어 필독서**")
-    st.markdown("🔥 *현직자들이 추천하는 실무 교재*")
-    st.markdown("💪 *기초부터 실전까지 완벽 마스터*")
+    st.markdown("### 💻 데이터 전문가 추천 노트북")
+    st.markdown("**🚀 DBA & 데이터 엔지니어 필수템**")
+    st.markdown("⚡ *대용량 데이터 처리에 최적화*")
+    st.markdown("🔥 *현업 개발자들이 선택한 스펙*")
     st.markdown("")
     st.markdown("📌 **이런 분들께 추천드려요**")
-    st.markdown("• DBA를 꿈꾸는 예비 개발자")
-    st.markdown("• 데이터 엔지니어로 전향하고픈 분")
-    st.markdown("• SQL 실력을 업그레이드하고 싶은 분")
+    st.markdown("• 데이터베이스 관리 업무를 하시는 분")
+    st.markdown("• 빅데이터 처리 작업이 많으신 분")
+    st.markdown("• SQL 쿼리 실습용 노트북이 필요한 분")
+    st.markdown("• 데이터 파이프라인 구축 학습용")
     
     # iframe을 HTML로 삽입
     components.html(
         """
         <div style="text-align: center; 
                     padding: 15px; 
-                    background: linear-gradient(135deg, #fff4e6 0%, #ffe0cc 100%);
+                    background: linear-gradient(135deg, #e6f3ff 0%, #cce0ff 100%);
                     border-radius: 15px;
-                    box-shadow: 0 3px 12px rgba(255,140,0,0.15);
-                    border: 2px solid #ffd4b3;">
+                    box-shadow: 0 3px 12px rgba(0,123,255,0.15);
+                    border: 2px solid #b3d1ff;">
             <iframe src="https://coupa.ng/ciwmTL" 
                     width="120" 
                     height="240" 
@@ -577,7 +578,7 @@ with st.sidebar:
             </iframe>
         </div>
         """,
-        height=340
+        height=360
     )
     
     # 쿠팡 파트너스 고지 (더 눈에 잘 띄게)
