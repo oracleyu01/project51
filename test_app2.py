@@ -1719,7 +1719,7 @@ with tab1:
         st.markdown('<div class="big-search">', unsafe_allow_html=True)
         career_name = st.text_input(
             "직업명 입력",
-            placeholder="예: 데이터 분석가, 데이터 엔지니어, dba 등,
+            placeholder="예: 데이터 분석가, 데이터 엔지니어, dba 등",
             value=default_value,
             label_visibility="collapsed",
             key="career_search_input"
