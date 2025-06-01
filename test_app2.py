@@ -2098,7 +2098,7 @@ with tab2:
                 "업무 적합도": base_score,
                 "성장 가능성": min(base_score + 5, 95),
                 "직무 만족도": base_score - 2,
-                "팀워크 적응": base_score - 3 if mbti_type[0] == 'I' else base_score + 2,
+                "팀워크 적응": (base_score - 3 if mbti_type[0] == 'I' else base_score + 2),
                 "스트레스 관리": base_score - 7
             }
             
