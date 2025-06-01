@@ -2257,4 +2257,19 @@ with col2:
 with col3:
     st.markdown("""
     <div class="metric-card">
-        <i class="fas fa-save" style="color: #dc3545; font-
+        <i class="fas fa-save" style="color: #dc3545; font-size: 2rem;"></i>
+        <p style="margin-top: 0.5rem;">검색 결과<br>자동 저장</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+current_date = datetime.now().strftime('%Y년 %m월 %d일')
+st.markdown(f"""
+<div style="text-align: center; color: #666; padding: 2rem; margin-top: 2rem;">
+    <p style="margin-bottom: 0.5rem;">
+        <i class="fas fa-clock"></i> 마지막 업데이트: {current_date}
+    </p>
+    <p style="font-size: 0.9rem; opacity: 0.8;">
+        Powered by LangGraph & OpenAI | Made with <i class="fas fa-heart" style="color: #e74c3c;"></i> by Career Insight Team
+    </p>
+</div>
+""", unsafe_allow_html=True)
