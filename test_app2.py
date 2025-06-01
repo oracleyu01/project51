@@ -550,106 +550,6 @@ class CareerInfoCrawler:
             'valid_pros_cons': 0,
             'api_errors': 0
         }
-        
-        # 직업별 미리 정의된 데이터
-        self.predefined_career_data = {
-            "데이터 분석가": {
-                "pros": [
-                    "데이터 기반 의사결정을 통한 비즈니스 가치 창출",
-                    "다양한 도구와 기술을 배울 수 있는 기회",
-                    "높은 수요와 좋은 처우",
-                    "재택근무 등 유연한 근무 환경",
-                    "다양한 산업 분야로의 이직 가능성"
-                ],
-                "cons": [
-                    "끊임없는 새로운 기술 학습 필요",
-                    "데이터 품질 이슈로 인한 스트레스",
-                    "비즈니스와 기술 사이의 커뮤니케이션 어려움",
-                    "반복적인 리포트 작성 업무",
-                    "성과를 정량화하기 어려운 경우가 많음"
-                ]
-            },
-            "데이터 엔지니어": {
-                "pros": [
-                    "높은 수요와 좋은 처우",
-                    "대용량 데이터 처리의 성취감",
-                    "클라우드 기술 전문성 확보",
-                    "데이터 기반 의사결정의 핵심 역할",
-                    "다양한 도메인 경험 가능"
-                ],
-                "cons": [
-                    "24/7 파이프라인 모니터링",
-                    "복잡한 기술 스택 관리",
-                    "데이터 품질 이슈 대응",
-                    "가시적 성과 부족",
-                    "지속적인 최적화 압박"
-                ]
-            },
-            "자바 개발자": {
-                "pros": [
-                    "안정적인 기술 스택",
-                    "대기업과 금융권 수요 높음",
-                    "체계적인 개발 프로세스",
-                    "풍부한 레퍼런스와 커뮤니티",
-                    "Spring 생태계의 강력함"
-                ],
-                "cons": [
-                    "레거시 시스템 유지보수",
-                    "보수적인 기술 환경",
-                    "긴 빌드 시간",
-                    "무거운 프레임워크",
-                    "최신 기술 도입 어려움"
-                ]
-            },
-            "DBA": {
-                "pros": [
-                    "안정적인 직무로 수요가 꾸준함",
-                    "기술의 변화가 상대적으로 느림",
-                    "높은 전문성으로 대체 불가능",
-                    "체계적인 업무 프로세스",
-                    "금융, 대기업 등 안정적인 직장"
-                ],
-                "cons": [
-                    "24시간 온콜 대응 부담",
-                    "장애 발생 시 큰 책임감",
-                    "반복적인 모니터링 업무",
-                    "새로운 기술 도입이 보수적",
-                    "야간 작업이 잦음"
-                ]
-            },
-            "DB 엔지니어": {
-                "pros": [
-                    "데이터 모델링의 창의성",
-                    "성능 튜닝의 성취감",
-                    "개발과 운영의 균형잡힌 역할",
-                    "다양한 프로젝트 경험 가능",
-                    "백엔드 개발로 전환 용이"
-                ],
-                "cons": [
-                    "복잡한 쿼리 최적화 압박",
-                    "레거시 DB 마이그레이션 스트레스",
-                    "다양한 DBMS 학습 부담",
-                    "개발팀과 운영팀 사이의 갈등",
-                    "성능 이슈에 대한 책임"
-                ]
-            },
-            "AI 엔지니어": {
-                "pros": [
-                    "최신 기술을 실제 서비스에 적용",
-                    "높은 연봉과 대우",
-                    "MLOps 분야의 성장 가능성",
-                    "다양한 AI 모델 경험",
-                    "글로벌 기업 진출 기회"
-                ],
-                "cons": [
-                    "복잡한 인프라 관리",
-                    "높은 컴퓨팅 비용 부담",
-                    "모델과 시스템 양쪽 지식 필요",
-                    "실시간 서빙의 기술적 난이도",
-                    "빠른 기술 변화 속도"
-                ]
-            }
-        }
     
     def remove_html_tags(self, text):
         """HTML 태그 제거"""
@@ -659,42 +559,63 @@ class CareerInfoCrawler:
     
     def search_career_info(self, query, display=20):
         """네이버 검색 API를 통해 직업 정보 검색"""
-        url = "https://openapi.naver.com/v1/search/blog"
+        all_results = []
         
-        # 직업 관련 검색어 조합
+        # 직업 관련 다양한 검색어 조합
         search_queries = [
             f"{query} 직업 장단점",
             f"{query} 현실 단점",
             f"{query} 실제 장점",
             f"{query} 연봉 워라밸",
-            f"{query} 직업 후기"
+            f"{query} 직업 후기",
+            f"{query} 직업 현실",
+            f"{query} 일하면서 느낀점",
+            f"{query} 직업 추천",
+            f"{query} 직업 경험담",
+            f"{query} 커리어 조언"
         ]
         
-        all_results = []
+        # 블로그와 뉴스 모두 검색
+        search_types = [
+            ("blog", "https://openapi.naver.com/v1/search/blog"),
+            ("news", "https://openapi.naver.com/v1/search/news")
+        ]
         
-        for search_query in search_queries:
-            params = {
-                "query": search_query,
-                "display": 10,
-                "sort": "sim"
-            }
-            
-            try:
-                response = requests.get(url, headers=self.naver_headers, params=params)
-                if response.status_code == 200:
-                    result = response.json()
-                    for item in result.get('items', []):
-                        item['title'] = self.remove_html_tags(item['title'])
-                        item['description'] = self.remove_html_tags(item['description'])
-                    all_results.extend(result.get('items', []))
-            except Exception as e:
-                print(f"검색 오류: {e}")
+        for search_type, url in search_types:
+            for search_query in search_queries[:5]:  # 각 타입별로 5개 쿼리만 사용
+                params = {
+                    "query": search_query,
+                    "display": 10,
+                    "sort": "sim"
+                }
+                
+                try:
+                    response = requests.get(url, headers=self.naver_headers, params=params)
+                    if response.status_code == 200:
+                        result = response.json()
+                        for item in result.get('items', []):
+                            item['title'] = self.remove_html_tags(item['title'])
+                            item['description'] = self.remove_html_tags(item['description'])
+                            item['search_type'] = search_type  # 블로그인지 뉴스인지 구분
+                        all_results.extend(result.get('items', []))
+                    time.sleep(0.1)  # API 호출 제한을 위한 짧은 대기
+                except Exception as e:
+                    print(f"{search_type} 검색 오류: {e}")
         
-        return all_results
+        # 중복 제거 (제목 기준)
+        seen_titles = set()
+        unique_results = []
+        for item in all_results:
+            if item['title'] not in seen_titles:
+                seen_titles.add(item['title'])
+                unique_results.append(item)
+        
+        return unique_results[:30]  # 최대 30개 결과 반환
     
     def crawl_content(self, url):
-        """블로그 본문 크롤링"""
+        """블로그 및 뉴스 본문 크롤링"""
         try:
+            # 네이버 블로그 처리
             if "blog.naver.com" in url:
                 parts = url.split('/')
                 if len(parts) >= 5:
@@ -723,6 +644,39 @@ class CareerInfoCrawler:
                         content = content.replace('\u200b', '')
                         
                         return content if len(content) > 300 else None
+            
+            # 일반 웹페이지 및 뉴스 처리
+            else:
+                response = requests.get(url, headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                })
+                
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    
+                    # 뉴스 기사 본문 추출 시도
+                    content = ""
+                    article_selectors = [
+                        'article', 'div.article_body', 'div.news_body', 
+                        'div.content', 'main', 'div#articleBody',
+                        'div.article_content', 'div.news_content'
+                    ]
+                    
+                    for selector in article_selectors:
+                        elem = soup.select_one(selector)
+                        if elem:
+                            content = elem.get_text(separator='\n', strip=True)
+                            break
+                    
+                    if not content:
+                        # 일반적인 텍스트 추출
+                        content = soup.get_text(separator='\n', strip=True)
+                    
+                    content = re.sub(r'\s+', ' ', content)
+                    content = content.replace('\u200b', '')
+                    
+                    return content if len(content) > 300 else None
+                    
         except Exception as e:
             print(f"크롤링 오류: {e}")
         return None
@@ -809,6 +763,64 @@ class CareerInfoCrawler:
             self.stats['api_errors'] += 1
             print(f"GPT API 오류: {str(e)[:100]}")
             return None
+    
+    def extract_career_pros_cons_simple(self, career_name, content):
+        """키워드 기반 간단한 장단점 추출 (GPT API 없을 때 사용)"""
+        if not content or len(content) < 200:
+            return None
+        
+        content_lower = content.lower()
+        
+        # 장점 관련 키워드
+        pros_keywords = [
+            '장점', '좋은점', '좋은 점', '메리트', '이점', '강점',
+            '좋다', '좋았다', '좋습니다', '만족', '추천',
+            '높은 연봉', '워라밸', '안정적', '성장', '발전',
+            '보람', '재미있', '흥미로', '유연한'
+        ]
+        
+        # 단점 관련 키워드
+        cons_keywords = [
+            '단점', '나쁜점', '나쁜 점', '어려운점', '힘든점',
+            '어렵다', '힘들다', '스트레스', '야근', '박봉',
+            '불안정', '경쟁', '부담', '압박', '피곤',
+            '지루', '반복적', '단순'
+        ]
+        
+        pros = []
+        cons = []
+        
+        # 문장 단위로 분리
+        sentences = re.split(r'[.!?]\s*', content)
+        
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if len(sentence) < 10 or len(sentence) > 200:
+                continue
+            
+            sentence_lower = sentence.lower()
+            
+            # 장점 추출
+            for keyword in pros_keywords:
+                if keyword in sentence_lower and career_name.lower() in sentence_lower:
+                    if len(pros) < 5 and sentence not in pros:
+                        pros.append(sentence)
+                        break
+            
+            # 단점 추출
+            for keyword in cons_keywords:
+                if keyword in sentence_lower and career_name.lower() in sentence_lower:
+                    if len(cons) < 5 and sentence not in cons:
+                        cons.append(sentence)
+                        break
+        
+        if pros or cons:
+            return {
+                'pros': pros[:3],
+                'cons': cons[:3]
+            }
+        
+        return None
     
     def deduplicate_points(self, points):
         """유사한 장단점 중복 제거"""
@@ -1229,43 +1241,34 @@ def crawl_web(state: CareerState) -> CareerState:
         HumanMessage(content=f"🌐 웹에서 '{career_name}' 정보 수집 시작...")
     )
     
-    # API 키가 없을 때 또는 미리 정의된 데이터를 사용
-    if not OPENAI_API_KEY or career_name in crawler.predefined_career_data:
-        # 미리 정의된 데이터 사용
-        if career_name in crawler.predefined_career_data:
-            career_data = crawler.predefined_career_data[career_name]
-        else:
-            # 기본 데이터
-            career_data = {
-                "pros": [
-                    "전문성을 개발할 수 있습니다",
-                    "안정적인 수입이 가능합니다",
-                    "경력 개발 기회가 있습니다",
-                    "사회적 기여를 할 수 있습니다",
-                    "네트워크를 확장할 수 있습니다"
-                ],
-                "cons": [
-                    "업무 스트레스가 있을 수 있습니다",
-                    "워라밸 유지가 어려울 수 있습니다",
-                    "경쟁이 치열할 수 있습니다",
-                    "지속적인 자기계발이 필요합니다",
-                    "초기 연봉이 낮을 수 있습니다"
-                ]
-            }
+    # API 키가 없을 때만 샘플 데이터 사용
+    if not OPENAI_API_KEY:
+        # 기본 데이터
+        career_data = {
+            "pros": [
+                "전문성을 개발할 수 있습니다",
+                "안정적인 수입이 가능합니다",
+                "경력 개발 기회가 있습니다",
+                "사회적 기여를 할 수 있습니다",
+                "네트워크를 확장할 수 있습니다"
+            ],
+            "cons": [
+                "업무 스트레스가 있을 수 있습니다",
+                "워라밸 유지가 어려울 수 있습니다",
+                "경쟁이 치열할 수 있습니다",
+                "지속적인 자기계발이 필요합니다",
+                "초기 연봉이 낮을 수 있습니다"
+            ]
+        }
         
         state["pros"] = career_data["pros"]
         state["cons"] = career_data["cons"]
         state["salary_info"] = crawler.get_career_salary_info(career_name)
         state["career_path"] = crawler.get_career_path(career_name)
         
-        if not OPENAI_API_KEY:
-            state["messages"].append(
-                AIMessage(content="📌 샘플 데이터를 표시합니다 (API 키 설정 필요)")
-            )
-        else:
-            state["messages"].append(
-                AIMessage(content="📌 미리 정의된 직업 데이터를 사용합니다")
-            )
+        state["messages"].append(
+            AIMessage(content="📌 샘플 데이터를 표시합니다 (OpenAI API 키 설정 필요)")
+        )
         return state
     
     # 실제 크롤링 로직
@@ -1278,13 +1281,15 @@ def crawl_web(state: CareerState) -> CareerState:
     
     if search_results:
         state["messages"].append(
-            AIMessage(content=f"→ {len(search_results)}개 포스트 발견")
+            AIMessage(content=f"→ {len(search_results)}개 포스트/기사 발견 (블로그 + 뉴스)")
         )
         
-        # 각 포스트 처리
-        for idx, post in enumerate(search_results[:10]):
+        # 각 포스트 처리 (최대 15개까지 처리)
+        processed_count = 0
+        for idx, post in enumerate(search_results[:15]):
+            search_type = post.get('search_type', 'blog')
             state["messages"].append(
-                AIMessage(content=f"📖 분석 중: {post['title'][:40]}...")
+                AIMessage(content=f"📖 [{search_type}] 분석 중: {post['title'][:40]}...")
             )
             
             # 크롤링
@@ -1293,9 +1298,15 @@ def crawl_web(state: CareerState) -> CareerState:
                 continue
             
             crawler.stats['total_crawled'] += 1
+            processed_count += 1
             
             # 장단점 추출
-            pros_cons = crawler.extract_career_pros_cons_with_gpt(career_name, content)
+            if OPENAI_API_KEY:
+                # GPT API를 사용한 추출
+                pros_cons = crawler.extract_career_pros_cons_with_gpt(career_name, content)
+            else:
+                # 키워드 기반 간단한 추출
+                pros_cons = crawler.extract_career_pros_cons_simple(career_name, content)
             
             if pros_cons:
                 all_pros.extend(pros_cons['pros'])
@@ -1303,21 +1314,49 @@ def crawl_web(state: CareerState) -> CareerState:
                 sources.append({
                     'title': post['title'],
                     'link': post['link'],
-                    'date': post.get('postdate', '')
+                    'date': post.get('postdate', ''),
+                    'type': search_type
                 })
                 
                 state["messages"].append(
                     AIMessage(content=f"✓ 장점 {len(pros_cons['pros'])}개, 단점 {len(pros_cons['cons'])}개 추출")
                 )
             
-            time.sleep(0.5)
+            # API 호출 제한을 위한 대기
+            time.sleep(0.3)
+            
+            # 충분한 데이터를 수집했으면 중단
+            if len(all_pros) >= 20 and len(all_cons) >= 20:
+                break
     
     # 중복 제거 및 정리
     unique_pros = crawler.deduplicate_points(all_pros)
     unique_cons = crawler.deduplicate_points(all_cons)
     
-    state["pros"] = unique_pros
-    state["cons"] = unique_cons
+    # 크롤링 결과가 없거나 부족한 경우 기본 데이터 사용
+    if not unique_pros and not unique_cons:
+        state["messages"].append(
+            AIMessage(content="⚠️ 웹에서 충분한 정보를 찾지 못했습니다. 기본 정보를 제공합니다.")
+        )
+        
+        # 기본 데이터 (폴백)
+        unique_pros = [
+            f"{career_name} 분야의 전문성을 개발할 수 있습니다",
+            "안정적인 수입과 경력 개발이 가능합니다",
+            "다양한 프로젝트 경험을 쌓을 수 있습니다",
+            "업계 네트워크를 확장할 기회가 많습니다",
+            "지속적인 성장과 발전이 가능합니다"
+        ]
+        unique_cons = [
+            "업무 강도가 높을 수 있습니다",
+            "지속적인 학습과 자기계발이 필요합니다",
+            "초기에는 연봉이 낮을 수 있습니다",
+            "워라밸 유지가 어려울 수 있습니다",
+            "경쟁이 치열한 분야입니다"
+        ]
+    
+    state["pros"] = unique_pros[:10]  # 최대 10개
+    state["cons"] = unique_cons[:10]  # 최대 10개
     state["sources"] = sources[:10]
     state["salary_info"] = crawler.get_career_salary_info(career_name)
     state["career_path"] = crawler.get_career_path(career_name)
@@ -1331,6 +1370,12 @@ def crawl_web(state: CareerState) -> CareerState:
         try:
             supabase = get_supabase_client()
             if supabase:
+                # 기존 데이터 삭제 (중복 방지)
+                try:
+                    supabase.table('career_pros_cons').delete().eq('career_name', career_name).execute()
+                except:
+                    pass
+                
                 data = []
                 
                 for pro in state["pros"]:
@@ -1350,7 +1395,7 @@ def crawl_web(state: CareerState) -> CareerState:
                 if data:
                     supabase.table('career_pros_cons').insert(data).execute()
                     state["messages"].append(
-                        AIMessage(content="💾 데이터베이스에 저장 완료!")
+                        AIMessage(content="💾 데이터베이스에 저장 완료! 다음 검색 시 더 빠른 결과를 제공합니다.")
                     )
                     st.session_state.saved_careers += 1
         except Exception as e:
@@ -1471,7 +1516,6 @@ with col2:
             if career_name not in st.session_state.bookmarks:
                 st.session_state.bookmarks.append(career_name)
                 st.success("북마크에 추가되었습니다!")
-                st.session_state.total_searches += 1
     st.markdown('</div>', unsafe_allow_html=True)
     
     # 인기 검색어
@@ -1505,6 +1549,9 @@ if search_button:
         search_term = career_name
     
     if search_term:
+        # 검색 통계 증가
+        st.session_state.total_searches += 1
+        
         loading_placeholder = show_loading_animation()
         
         # LangGraph 실행
@@ -1566,6 +1613,16 @@ if search_button:
                 if final_state.get("career_path"):
                     career_timeline = create_career_path_timeline(final_state["career_path"])
                     st.plotly_chart(career_timeline, use_container_width=True)
+            
+            # 장단점 차트 및 워드클라우드
+            st.markdown("---")
+            
+            # 워드클라우드 표시
+            display_wordclouds(final_state["pros"], final_state["cons"])
+            
+            # 장단점 통계 차트
+            pros_cons_chart = create_pros_cons_chart(len(final_state["pros"]), len(final_state["cons"]))
+            st.plotly_chart(pros_cons_chart, use_container_width=True)
             
             # 장단점 상세 표시
             st.markdown("---")
