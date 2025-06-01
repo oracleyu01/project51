@@ -537,46 +537,34 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-## 사이드바 설정
+# 사이드바 설정
 with st.sidebar:
-    # 인프런 SQL 강의 광고 배너 - 박스 스타일
-    st.markdown("""
-    <div style="text-align: center; 
-                padding: 20px; 
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 15px;
-                box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
-                border: 2px solid #5a67d8;
-                margin-bottom: 20px;">
-        <h3 style="color: white; margin: 0 0 10px 0; font-size: 1.3rem;">
-            🎯 SQL 마스터 되기!
-        </h3>
-        <p style="color: white; margin: 5px 0; font-weight: 600; font-size: 1.1rem;">
-            데이터 분석의 시작
-        </p>
-        <p style="color: white; margin: 5px 0; font-weight: 600; font-size: 1.1rem;">
-            실무 SQL 완전정복
-        </p>
-        <p style="color: #ffd700; margin: 15px 0 20px 0; font-size: 0.95rem;">
-            🔥 온라인으로 편하게 수강하세요
-        </p>
-        <a href="https://inf.run/R9Te3" target="_blank" 
-           style="display: inline-block;
-                  background: white;
-                  color: #667eea;
-                  padding: 12px 30px;
-                  border-radius: 25px;
-                  text-decoration: none;
-                  font-weight: bold;
-                  font-size: 1.1rem;
-                  transition: all 0.3s ease;
-                  box-shadow: 0 3px 10px rgba(0,0,0,0.2);">
-            수강하러 가기 →
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
+    # 인프런 SQL 강의 광고 배너 - 간단한 버전
+    st.markdown("### 🎯 SQL 마스터 되기!")
+    st.markdown("**데이터 분석의 시작**")
+    st.markdown("**실무 SQL 완전정복**")
+    st.markdown("🔥온라인으로 편하게 수강하세요")
+    
+    # 링크 버튼
+    st.link_button(
+        "수강하러 가기 →",
+        "https://inf.run/R9Te3",
+        use_container_width=True
+    )
     
     st.markdown("---")
+    
+    # 쿠팡 파트너스 광고
+    st.markdown("### 💻 데이터 전문가 추천 노트북")
+    st.markdown("**🚀 DBA & 데이터 엔지니어 필수템**")
+    st.markdown("⚡ *대용량 데이터 처리에 최적화*")
+    st.markdown("🔥 *현업 개발자들이 선택한 스펙*")
+    st.markdown("")
+    st.markdown("📌 **이런 분들께 추천드려요**")
+    st.markdown("• 데이터베이스 관리 업무를 하시는 분")
+    st.markdown("• 빅데이터 처리 작업이 많으신 분")
+    st.markdown("• SQL 쿼리 실습용 노트북이 필요한 분")
+    st.markdown("• 데이터 파이프라인 구축 학습용")
     
     # iframe을 HTML로 삽입
     components.html(
