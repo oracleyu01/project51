@@ -547,21 +547,26 @@ with st.sidebar:
     st.markdown("---")
     
     # 쿠팡 파트너스 광고
-    st.markdown("### ❄️ 오늘의 간식")
-    st.markdown("**블루탕 오매기떡**")
-    st.markdown("🚀 *로켓프레시로 신선하게!*")
-    st.markdown("💙 *쫄깃달콤 시원한 맛*")
+    st.markdown("### 📚 데이터 전문가 추천 도서")
+    st.markdown("**🎯 DBA & 데이터 엔지니어 필독서**")
+    st.markdown("🔥 *현직자들이 추천하는 실무 교재*")
+    st.markdown("💪 *기초부터 실전까지 완벽 마스터*")
+    st.markdown("")
+    st.markdown("📌 **이런 분들께 추천드려요**")
+    st.markdown("• DBA를 꿈꾸는 예비 개발자")
+    st.markdown("• 데이터 엔지니어로 전향하고픈 분")
+    st.markdown("• SQL 실력을 업그레이드하고 싶은 분")
     
     # iframe을 HTML로 삽입
     components.html(
         """
         <div style="text-align: center; 
                     padding: 15px; 
-                    background: linear-gradient(135deg, #e6f2ff 0%, #cce5ff 100%);
+                    background: linear-gradient(135deg, #fff4e6 0%, #ffe0cc 100%);
                     border-radius: 15px;
-                    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-                    border: 1px solid #d4e9ff;">
-            <iframe src="https://coupa.ng/ciwmbt" 
+                    box-shadow: 0 3px 12px rgba(255,140,0,0.15);
+                    border: 2px solid #ffd4b3;">
+            <iframe src="https://coupa.ng/ciwmTL" 
                     width="120" 
                     height="240" 
                     frameborder="0" 
@@ -572,7 +577,7 @@ with st.sidebar:
             </iframe>
         </div>
         """,
-        height=300
+        height=340
     )
     
     # 쿠팡 파트너스 고지 (더 눈에 잘 띄게)
@@ -1681,7 +1686,7 @@ with tab1:
         st.markdown('<div class="big-search">', unsafe_allow_html=True)
         career_name = st.text_input(
             "직업명 입력",
-            placeholder="예: 데이터 분석가, 데이터 엔지니어, DBA, AI 엔지니어, AI 개발자",
+            placeholder="예: 개발자, 의사, 교사, 디자이너, 변호사",
             value=default_value,
             label_visibility="collapsed",
             key="career_search_input"
