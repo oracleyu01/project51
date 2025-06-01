@@ -102,6 +102,10 @@ if 'mbti_career_analysis' not in st.session_state:
     st.session_state.mbti_career_analysis = None
 if 'mbti_type_analysis' not in st.session_state:
     st.session_state.mbti_type_analysis = None
+if 'mbti_recommendation_shown' not in st.session_state:
+    st.session_state.mbti_recommendation_shown = False
+if 'selected_mbti_type' not in st.session_state:
+    st.session_state.selected_mbti_type = None
 
 # CSS 스타일 - 다크모드 지원
 if st.session_state.dark_mode:
@@ -1899,15 +1903,30 @@ with tab2:
     with col2:
         # MBTI 선택
         mbti_types = sorted(MBTI_CAREER_MAPPING.keys())
+        
+        # 이전에 선택한 MBTI가 있으면 기본값으로 설정
+        default_mbti_index = 0
+        if 'selected_mbti_type' in st.session_state:
+            try:
+                default_mbti_index = mbti_types.index(st.session_state.selected_mbti_type)
+            except ValueError:
+                default_mbti_index = 0
+        
         selected_mbti = st.selectbox(
             "MBTI 유형을 선택하세요",
             options=mbti_types,
+            index=default_mbti_index,
             format_func=lambda x: f"{x} - {MBTI_CAREER_MAPPING[x]['description'].split('.')[0]}",
             key="mbti_selector"
         )
         
-        if st.button("🎯 직업 추천받기", use_container_width=True, type="primary", key="mbti_recommend"):
+        # 선택한 MBTI 저장
+        st.session_state.selected_mbti_type = selected_mbti
+        
+        # 추천받기 버튼을 누르거나 이미 추천 결과가 있는 경우
+        if st.button("🎯 직업 추천받기", use_container_width=True, type="primary", key="mbti_recommend") or 'mbti_recommendation_shown' in st.session_state:
             if selected_mbti:
+                st.session_state.mbti_recommendation_shown = True
                 mbti_data = MBTI_CAREER_MAPPING[selected_mbti]
                 
                 # 결과 표시
@@ -1972,6 +1991,7 @@ with tab2:
                         if st.button(f"상세 분석", key=f"mbti_career_{idx}"):
                             st.session_state.mbti_career_analysis = career
                             st.session_state.mbti_type_analysis = selected_mbti
+                            st.rerun()
                 
                 # 추가 팁
                 st.markdown("""
@@ -1987,28 +2007,30 @@ with tab2:
         career = st.session_state.mbti_career_analysis
         mbti_type = st.session_state.mbti_type_analysis
         
-        st.markdown("---")
-        st.markdown(f"""
-        <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%); border-radius: 15px; margin: 2rem 0;">
-            <h2 style="color: #667eea; margin-bottom: 1rem;">
-                🔍 {mbti_type} × {career} 상세 분석
-            </h2>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # MBTI와 직업 매칭 분석
-        col1, col2 = st.columns(2)
-        
-        with col1:
+        # MBTI 데이터가 있는지 확인
+        if mbti_type in MBTI_CAREER_MAPPING:
+            st.markdown("---")
             st.markdown(f"""
-            <div class="mbti-card fade-in">
-                <h3 style="color: #667eea; margin-bottom: 1.5rem;">
-                    <i class="fas fa-user-check"></i> 성격 특성과 직무 매칭
-                </h3>
+            <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%); border-radius: 15px; margin: 2rem 0;">
+                <h2 style="color: #667eea; margin-bottom: 1rem;">
+                    🔍 {mbti_type} × {career} 상세 분석
+                </h2>
+            </div>
             """, unsafe_allow_html=True)
             
-            # MBTI 특성과 직업 요구사항 매칭
-            mbti_strengths = MBTI_CAREER_MAPPING[mbti_type]['strengths']
+            # MBTI와 직업 매칭 분석
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown(f"""
+                <div class="mbti-card fade-in">
+                    <h3 style="color: #667eea; margin-bottom: 1.5rem;">
+                        <i class="fas fa-user-check"></i> 성격 특성과 직무 매칭
+                    </h3>
+                """, unsafe_allow_html=True)
+                
+                # MBTI 특성과 직업 요구사항 매칭
+                mbti_strengths = MBTI_CAREER_MAPPING.get(mbti_type, {}).get('strengths', [])
             
             # 직업별 요구사항 정의
             career_requirements = {
@@ -2124,7 +2146,7 @@ with tab2:
             "ESFP": ["팀에 활력을 불어넣는 역할을 하세요", "사용자와 직접 소통하며 피드백을 수집하세요", "유연한 사고로 변화에 빠르게 적응하세요"]
         }
         
-        strategies = success_strategies.get(mbti_type[:4], ["지속적인 학습과 성장을 추구하세요", "자신의 강점을 최대한 활용하세요", "약점을 보완하는 노력을 하세요"])
+        strategies = success_strategies.get(mbti_type, ["지속적인 학습과 성장을 추구하세요", "자신의 강점을 최대한 활용하세요", "약점을 보완하는 노력을 하세요"])
         
         for strategy in strategies:
             st.markdown(f"""
@@ -2163,7 +2185,7 @@ with tab2:
             "ESFP": ["깊이 있는 전문성 개발하기", "계획적인 업무 처리 연습하기", "비판을 성장의 기회로 삼기"]
         }
         
-        caution_list = cautions.get(mbti_type[:4], ["번아웃 주의", "지속적인 학습 필요", "팀워크 중요"])
+        caution_list = cautions.get(mbti_type, ["번아웃 주의", "지속적인 학습 필요", "팀워크 중요"])
         
         for caution in caution_list:
             st.markdown(f"""
