@@ -2008,7 +2008,7 @@ with tab2:
         mbti_type = st.session_state.mbti_type_analysis
         
         # MBTI 데이터가 있는지 확인
-        if mbti_type in MBTI_CAREER_MAPPING:
+        if mbti_type and mbti_type in MBTI_CAREER_MAPPING:
             st.markdown("---")
             st.markdown(f"""
             <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%); border-radius: 15px; margin: 2rem 0;">
