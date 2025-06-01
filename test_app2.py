@@ -98,6 +98,10 @@ if 'saved_careers' not in st.session_state:
     st.session_state.saved_careers = 0
 if 'selected_tab' not in st.session_state:
     st.session_state.selected_tab = 0
+if 'mbti_career_analysis' not in st.session_state:
+    st.session_state.mbti_career_analysis = None
+if 'mbti_type_analysis' not in st.session_state:
+    st.session_state.mbti_type_analysis = None
 
 # CSS 스타일 - 다크모드 지원
 if st.session_state.dark_mode:
@@ -1687,7 +1691,7 @@ with tab1:
         st.markdown('<div class="big-search">', unsafe_allow_html=True)
         career_name = st.text_input(
             "직업명 입력",
-            placeholder="예: 데이터 분석가, 데이터 엔지니어 등",
+            placeholder="예: 개발자, 의사, 교사, 디자이너, 변호사",
             value=default_value,
             label_visibility="collapsed",
             key="career_search_input"
@@ -1966,9 +1970,8 @@ with tab2:
                         """, unsafe_allow_html=True)
                     with col2:
                         if st.button(f"상세 분석", key=f"mbti_career_{idx}"):
-                            st.session_state.search_query = career
-                            st.session_state.selected_tab = 0  # 첫 번째 탭으로 이동
-                            st.rerun()
+                            st.session_state.mbti_career_analysis = career
+                            st.session_state.mbti_type_analysis = selected_mbti
                 
                 # 추가 팁
                 st.markdown("""
@@ -1978,6 +1981,209 @@ with tab2:
                     가치관, 능력, 경험 등을 종합적으로 고려해주세요.
                 </div>
                 """, unsafe_allow_html=True)
+    
+    # 상세 분석 표시
+    if 'mbti_career_analysis' in st.session_state and 'mbti_type_analysis' in st.session_state:
+        career = st.session_state.mbti_career_analysis
+        mbti_type = st.session_state.mbti_type_analysis
+        
+        st.markdown("---")
+        st.markdown(f"""
+        <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%); border-radius: 15px; margin: 2rem 0;">
+            <h2 style="color: #667eea; margin-bottom: 1rem;">
+                🔍 {mbti_type} × {career} 상세 분석
+            </h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # MBTI와 직업 매칭 분석
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown(f"""
+            <div class="mbti-card fade-in">
+                <h3 style="color: #667eea; margin-bottom: 1.5rem;">
+                    <i class="fas fa-user-check"></i> 성격 특성과 직무 매칭
+                </h3>
+            """, unsafe_allow_html=True)
+            
+            # MBTI 특성과 직업 요구사항 매칭
+            mbti_strengths = MBTI_CAREER_MAPPING[mbti_type]['strengths']
+            
+            # 직업별 요구사항 정의
+            career_requirements = {
+                "데이터 분석가": ["분석적 사고", "문제 해결", "커뮤니케이션", "세부사항 주의"],
+                "데이터 엔지니어": ["시스템 설계", "문제 해결", "기술적 깊이", "프로젝트 관리"],
+                "DBA": ["체계적 관리", "안정성 추구", "문제 해결", "책임감"],
+                "DB 엔지니어": ["기술적 이해", "시스템 최적화", "문제 해결", "창의성"],
+                "AI 개발자": ["창의적 사고", "수학적 이해", "프로그래밍", "혁신성"],
+                "AI 엔지니어": ["시스템 설계", "MLOps 이해", "문제 해결", "기술 통합"],
+                "자바 개발자": ["논리적 사고", "코드 품질", "팀워크", "기술 학습"],
+                "백엔드 개발자": ["시스템 설계", "문제 해결", "성능 최적화", "기술 이해"]
+            }
+            
+            requirements = career_requirements.get(career, ["전문성", "문제 해결", "팀워크", "학습 능력"])
+            
+            for req in requirements:
+                matching_strength = None
+                for strength in mbti_strengths:
+                    if any(keyword in strength for keyword in ["분석", "논리", "체계", "창의", "관리", "문제해결"]):
+                        matching_strength = strength
+                        break
+                
+                if matching_strength:
+                    st.markdown(f"""
+                    <div style="background: #e8f5e9; padding: 0.8rem; margin: 0.5rem 0; border-radius: 8px;">
+                        <strong style="color: #2e7d32;">✓ {req}</strong>
+                        <br><small style="color: #555;">→ {mbti_type}의 '{matching_strength}' 특성과 부합</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+            <div class="career-insight fade-in">
+                <h3 style="color: #667eea; margin-bottom: 1.5rem;">
+                    <i class="fas fa-chart-line"></i> 예상 성과와 만족도
+                </h3>
+            """, unsafe_allow_html=True)
+            
+            # 예상 적합도 점수 (MBTI와 직업에 따라 동적으로 계산)
+            mbti_career_fit = {
+                # 각 MBTI가 해당 직업에 얼마나 적합한지 점수
+                "INTJ": {"데이터 분석가": 90, "데이터 엔지니어": 85, "AI 개발자": 95, "백엔드 개발자": 88, "DBA": 80, "DB 엔지니어": 82, "자바 개발자": 85, "AI 엔지니어": 92},
+                "INTP": {"데이터 분석가": 88, "데이터 엔지니어": 82, "AI 개발자": 90, "백엔드 개발자": 85, "DBA": 75, "DB 엔지니어": 88, "자바 개발자": 80, "AI 엔지니어": 93},
+                "ENTJ": {"데이터 분석가": 82, "데이터 엔지니어": 90, "AI 개발자": 88, "백엔드 개발자": 85, "DBA": 88, "DB 엔지니어": 80, "자바 개발자": 82, "AI 엔지니어": 85},
+                "ENTP": {"데이터 분석가": 85, "데이터 엔지니어": 80, "AI 개발자": 92, "백엔드 개발자": 88, "DBA": 70, "DB 엔지니어": 75, "자바 개발자": 78, "AI 엔지니어": 90},
+                "INFJ": {"데이터 분석가": 88, "데이터 엔지니어": 75, "AI 개발자": 85, "백엔드 개발자": 78, "DBA": 72, "DB 엔지니어": 80, "자바 개발자": 75, "AI 엔지니어": 82},
+                "INFP": {"데이터 분석가": 82, "데이터 엔지니어": 70, "AI 개발자": 88, "백엔드 개발자": 80, "DBA": 65, "DB 엔지니어": 68, "자바 개발자": 72, "AI 엔지니어": 85},
+                "ENFJ": {"데이터 분석가": 85, "데이터 엔지니어": 72, "AI 개발자": 82, "백엔드 개발자": 80, "DBA": 68, "DB 엔지니어": 70, "자바 개발자": 75, "AI 엔지니어": 78},
+                "ENFP": {"데이터 분석가": 80, "데이터 엔지니어": 68, "AI 개발자": 85, "백엔드 개발자": 82, "DBA": 62, "DB 엔지니어": 65, "자바 개발자": 70, "AI 엔지니어": 82},
+                "ISTJ": {"데이터 분석가": 82, "데이터 엔지니어": 88, "AI 개발자": 75, "백엔드 개발자": 90, "DBA": 95, "DB 엔지니어": 92, "자바 개발자": 88, "AI 엔지니어": 78},
+                "ISFJ": {"데이터 분석가": 80, "데이터 엔지니어": 75, "AI 개발자": 70, "백엔드 개발자": 78, "DBA": 88, "DB 엔지니어": 85, "자바 개발자": 80, "AI 엔지니어": 72},
+                "ESTJ": {"데이터 분석가": 78, "데이터 엔지니어": 85, "AI 개발자": 72, "백엔드 개발자": 88, "DBA": 92, "DB 엔지니어": 88, "자바 개발자": 85, "AI 엔지니어": 75},
+                "ESFJ": {"데이터 분석가": 82, "데이터 엔지니어": 70, "AI 개발자": 68, "백엔드 개발자": 80, "DBA": 78, "DB 엔지니어": 82, "자바 개발자": 78, "AI 엔지니어": 70},
+                "ISTP": {"데이터 분석가": 75, "데이터 엔지니어": 88, "AI 개발자": 78, "백엔드 개발자": 92, "DBA": 82, "DB 엔지니어": 90, "자바 개발자": 88, "AI 엔지니어": 85},
+                "ISFP": {"데이터 분석가": 78, "데이터 엔지니어": 72, "AI 개발자": 82, "백엔드 개발자": 85, "DBA": 70, "DB 엔지니어": 75, "자바 개발자": 78, "AI 엔지니어": 80},
+                "ESTP": {"데이터 분석가": 70, "데이터 엔지니어": 85, "AI 개발자": 72, "백엔드 개발자": 88, "DBA": 80, "DB 엔지니어": 82, "자바 개발자": 85, "AI 엔지니어": 78},
+                "ESFP": {"데이터 분석가": 75, "데이터 엔지니어": 68, "AI 개발자": 78, "백엔드 개발자": 80, "DBA": 65, "DB 엔지니어": 68, "자바 개발자": 72, "AI 엔지니어": 75}
+            }
+            
+            base_score = mbti_career_fit.get(mbti_type, {}).get(career, 75)
+            
+            fit_scores = {
+                "업무 적합도": base_score,
+                "성장 가능성": min(base_score + 5, 95),
+                "직무 만족도": base_score - 2,
+                "팀워크 적응": base_score - 3 if mbti_type[0] == 'I' else base_score + 2,
+                "스트레스 관리": base_score - 7
+            }
+            
+            for category, score in fit_scores.items():
+                color = "#4caf50" if score >= 85 else "#ff9800" if score >= 70 else "#f44336"
+                st.markdown(f"""
+                <div style="margin: 1rem 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                        <span>{category}</span>
+                        <span style="font-weight: bold; color: {color};">{score}%</span>
+                    </div>
+                    <div style="background: #e0e0e0; height: 10px; border-radius: 5px;">
+                        <div style="background: {color}; width: {score}%; height: 100%; border-radius: 5px;"></div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+        
+        # 성공 전략
+        st.markdown(f"""
+        <div class="pros-section fade-in" style="margin-top: 2rem;">
+            <h3 style="color: #28a745; margin-bottom: 1.5rem;">
+                <i class="fas fa-rocket"></i> {mbti_type}가 {career}로 성공하는 전략
+            </h3>
+        """, unsafe_allow_html=True)
+        
+        # MBTI별 성공 전략
+        success_strategies = {
+            "INTJ": ["장기적 목표를 설정하고 체계적으로 접근하세요", "독립적인 프로젝트를 주도적으로 이끌어보세요", "데이터 기반 의사결정 능력을 강화하세요"],
+            "INTP": ["복잡한 기술 문제에 도전하며 전문성을 쌓으세요", "이론과 실무의 균형을 맞추세요", "팀과의 소통 스킬을 개발하세요"],
+            "ENTJ": ["프로젝트 리더 역할을 적극적으로 수행하세요", "팀원들의 강점을 파악하고 활용하세요", "결과 중심의 성과를 만들어내세요"],
+            "ENTP": ["혁신적인 솔루션 제안에 집중하세요", "다양한 기술 스택을 경험해보세요", "아이디어를 실행으로 옮기는 능력을 기르세요"],
+            "INFJ": ["사용자 중심의 관점을 유지하세요", "데이터에서 의미있는 스토리를 찾아내세요", "완벽주의를 적절히 조절하세요"],
+            "INFP": ["가치있는 프로젝트에 참여하세요", "창의적인 해결책을 제시하세요", "기술적 역량과 감성을 조화시키세요"],
+            "ENFJ": ["팀 협업과 멘토링에 강점을 발휘하세요", "기술과 비즈니스를 연결하는 역할을 하세요", "긍정적인 팀 문화를 조성하세요"],
+            "ENFP": ["열정을 프로젝트에 쏟아부으세요", "새로운 기술 트렌드를 선도하세요", "네트워킹을 통해 기회를 확장하세요"],
+            "ISTJ": ["체계적인 문서화와 프로세스 개선에 집중하세요", "안정적인 시스템 운영의 전문가가 되세요", "규칙과 표준을 준수하며 품질을 유지하세요"],
+            "ISFJ": ["팀원들을 세심하게 지원하는 역할을 하세요", "사용자 편의성을 고려한 개발을 하세요", "안정성과 신뢰성을 최우선으로 하세요"],
+            "ESTJ": ["프로젝트 일정과 목표 관리에 탁월함을 보이세요", "효율적인 프로세스를 구축하고 실행하세요", "명확한 커뮤니케이션으로 팀을 이끄세요"],
+            "ESFJ": ["팀의 화합과 협업을 촉진하세요", "고객 요구사항을 정확히 파악하고 반영하세요", "갈등 상황에서 중재자 역할을 하세요"],
+            "ISTP": ["실용적이고 효율적인 솔루션을 개발하세요", "기술적 문제를 독립적으로 해결하세요", "핸즈온 경험을 통해 전문성을 쌓으세요"],
+            "ISFP": ["사용자 경험을 개선하는 데 집중하세요", "조용히 꾸준하게 기술력을 향상시키세요", "자신만의 페이스로 성장하세요"],
+            "ESTP": ["빠른 프로토타이핑과 실험을 통해 학습하세요", "실시간 문제 해결 능력을 발휘하세요", "현장에서 직접 부딪치며 경험을 쌓으세요"],
+            "ESFP": ["팀에 활력을 불어넣는 역할을 하세요", "사용자와 직접 소통하며 피드백을 수집하세요", "유연한 사고로 변화에 빠르게 적응하세요"]
+        }
+        
+        strategies = success_strategies.get(mbti_type[:4], ["지속적인 학습과 성장을 추구하세요", "자신의 강점을 최대한 활용하세요", "약점을 보완하는 노력을 하세요"])
+        
+        for strategy in strategies:
+            st.markdown(f"""
+            <div style="background: white; padding: 1rem; margin: 0.5rem 0; border-radius: 8px; border-left: 4px solid #28a745;">
+                <i class="fas fa-check-circle" style="color: #28a745;"></i> {strategy}
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # 주의사항
+        st.markdown(f"""
+        <div class="cons-section fade-in" style="margin-top: 2rem;">
+            <h3 style="color: #dc3545; margin-bottom: 1.5rem;">
+                <i class="fas fa-exclamation-triangle"></i> 주의해야 할 점
+            </h3>
+        """, unsafe_allow_html=True)
+        
+        # MBTI별 주의사항
+        cautions = {
+            "INTJ": ["과도한 독립성으로 팀워크를 해치지 않도록 주의", "완벽주의로 인한 번아웃 조심", "타인의 감정도 고려하기"],
+            "INTP": ["이론에만 치우치지 않고 실무 경험 쌓기", "마감일을 준수하는 습관 기르기", "의사소통 능력 향상 필요"],
+            "ENTJ": ["팀원들의 의견을 경청하는 자세", "과도한 통제욕 자제하기", "워라밸 유지하기"],
+            "ENTP": ["한 가지에 집중하는 능력 기르기", "디테일한 부분도 놓치지 않기", "실행력 강화 필요"],
+            "INFJ": ["과도한 이상주의 경계하기", "현실적인 목표 설정하기", "자기 관리에 신경쓰기"],
+            "INFP": ["기술적 역량 강화에 집중하기", "비판을 개인적으로 받아들이지 않기", "현실적인 타협점 찾기"],
+            "ENFJ": ["자신의 니즈도 챙기기", "모든 사람을 만족시킬 수 없음을 인정하기", "객관적 판단력 기르기"],
+            "ENFP": ["프로젝트 완수 능력 기르기", "우선순위 정하기", "지나친 낙관주의 경계하기"],
+            "ISTJ": ["변화에 대한 유연성 기르기", "창의적 사고 개발하기", "새로운 기술 수용하기"],
+            "ISFJ": ["자기 주장 능력 기르기", "변화를 두려워하지 않기", "과도한 책임감 조절하기"],
+            "ESTJ": ["팀원들의 감정 고려하기", "유연한 사고 기르기", "마이크로매니징 자제하기"],
+            "ESFJ": ["기술적 깊이 추구하기", "비판적 사고 능력 개발하기", "갈등 회피보다 해결에 집중하기"],
+            "ISTP": ["장기적 계획 수립 능력 기르기", "팀 커뮤니케이션 강화하기", "감정 표현 연습하기"],
+            "ISFP": ["자기 PR 능력 개발하기", "적극적인 의견 개진하기", "네트워킹 활동 늘리기"],
+            "ESTP": ["장기적 관점 기르기", "이론적 학습도 소홀히 하지 않기", "충동적 결정 자제하기"],
+            "ESFP": ["깊이 있는 전문성 개발하기", "계획적인 업무 처리 연습하기", "비판을 성장의 기회로 삼기"]
+        }
+        
+        caution_list = cautions.get(mbti_type[:4], ["번아웃 주의", "지속적인 학습 필요", "팀워크 중요"])
+        
+        for caution in caution_list:
+            st.markdown(f"""
+            <div style="background: white; padding: 1rem; margin: 0.5rem 0; border-radius: 8px; border-left: 4px solid #dc3545;">
+                <i class="fas fa-times-circle" style="color: #dc3545;"></i> {caution}
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # 실제 직업 분석으로 이동 버튼
+        st.markdown("<br>", unsafe_allow_html=True)
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button(f"🔍 {career} 직업 상세 분석 보기", use_container_width=True, type="primary"):
+                st.session_state.search_query = career
+                st.session_state.selected_tab = 0
+                del st.session_state.mbti_career_analysis
+                del st.session_state.mbti_type_analysis
+                st.rerun()
 
 # 하단 정보
 st.markdown("---")
