@@ -539,18 +539,42 @@ st.markdown(f"""
 
 # 사이드바 설정
 with st.sidebar:
-    # 인프런 SQL 강의 광고 배너 - 간단한 버전
-    st.markdown("### 🎯 SQL 마스터 되기!")
-    st.markdown("**데이터 분석의 시작**")
-    st.markdown("**실무 SQL 완전정복**")
-    st.markdown("🔥온라인으로 편하게 수강하세요")
-    
-    # 링크 버튼
-    st.link_button(
-        "수강하러 가기 →",
-        "https://inf.run/R9Te3",
-        use_container_width=True
-    )
+    # 인프런 SQL 강의 광고 배너 - 박스 스타일
+    st.markdown("""
+    <div style="text-align: center; 
+                padding: 20px; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 15px;
+                box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+                border: 2px solid #5a67d8;
+                margin-bottom: 20px;">
+        <h3 style="color: white; margin: 0 0 10px 0; font-size: 1.3rem;">
+            🎯 SQL 마스터 되기!
+        </h3>
+        <p style="color: white; margin: 5px 0; font-weight: 600; font-size: 1.1rem;">
+            데이터 분석의 시작
+        </p>
+        <p style="color: white; margin: 5px 0; font-weight: 600; font-size: 1.1rem;">
+            실무 SQL 완전정복
+        </p>
+        <p style="color: #ffd700; margin: 15px 0 20px 0; font-size: 0.95rem;">
+            🔥 온라인으로 편하게 수강하세요
+        </p>
+        <a href="https://inf.run/R9Te3" target="_blank" 
+           style="display: inline-block;
+                  background: white;
+                  color: #667eea;
+                  padding: 12px 30px;
+                  border-radius: 25px;
+                  text-decoration: none;
+                  font-weight: bold;
+                  font-size: 1.1rem;
+                  transition: all 0.3s ease;
+                  box-shadow: 0 3px 10px rgba(0,0,0,0.2);">
+            수강하러 가기 →
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -2092,13 +2116,19 @@ with tab2:
                 "ESFP": {"데이터 분석가": 75, "데이터 엔지니어": 68, "AI 개발자": 78, "백엔드 개발자": 80, "DBA": 65, "DB 엔지니어": 68, "자바 개발자": 72, "AI 엔지니어": 75}
             }
             
-            base_score = mbti_career_fit.get(mbti_type, {}).get(career, 75)
+            base_score = mbti_career_fit.get(mbti_type, {}).get(career, 75) if mbti_type else 75
+            
+            # mbti_type이 유효한지 확인
+            if mbti_type and len(mbti_type) > 0:
+                is_introvert = mbti_type[0] == 'I'
+            else:
+                is_introvert = False
             
             fit_scores = {
                 "업무 적합도": base_score,
                 "성장 가능성": min(base_score + 5, 95),
                 "직무 만족도": base_score - 2,
-                "팀워크 적응": (base_score - 3 if mbti_type and len(mbti_type) > 0 and mbti_type[0] == 'I' else base_score + 2),
+                "팀워크 적응": base_score - 3 if is_introvert else base_score + 2,
                 "스트레스 관리": base_score - 7
             }
             
@@ -2227,19 +2257,4 @@ with col2:
 with col3:
     st.markdown("""
     <div class="metric-card">
-        <i class="fas fa-save" style="color: #dc3545; font-size: 2rem;"></i>
-        <p style="margin-top: 0.5rem;">검색 결과<br>자동 저장</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-current_date = datetime.now().strftime('%Y년 %m월 %d일')
-st.markdown(f"""
-<div style="text-align: center; color: #666; padding: 2rem; margin-top: 2rem;">
-    <p style="margin-bottom: 0.5rem;">
-        <i class="fas fa-clock"></i> 마지막 업데이트: {current_date}
-    </p>
-    <p style="font-size: 0.9rem; opacity: 0.8;">
-        Powered by LangGraph & OpenAI | Made with <i class="fas fa-heart" style="color: #e74c3c;"></i> by Career Insight Team
-    </p>
-</div>
-""", unsafe_allow_html=True)
+        <i class="fas fa-save" style="color: #dc3545; font-
