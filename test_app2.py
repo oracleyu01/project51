@@ -2094,7 +2094,7 @@ with tab2:
             
             base_score = mbti_career_fit.get(mbti_type, {}).get(career, 75)
             
-           fit_scores = {
+            fit_scores = {
                 "업무 적합도": base_score,
                 "성장 가능성": min(base_score + 5, 95),
                 "직무 만족도": base_score - 2,
