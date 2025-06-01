@@ -487,17 +487,20 @@ with st.sidebar:
     st.markdown("---")
     
     # 쿠팡 파트너스 광고
-    st.markdown("### 🛒 추천 상품")
-    st.markdown("**IT 전문가를 위한 필수템**")
+    st.markdown("### ❄️ 오늘의 간식")
+    st.markdown("**블루탕 오매기떡**")
+    st.markdown("🚀 *로켓프레시로 신선하게!*")
+    st.markdown("💙 *쫄깃달콤 시원한 맛*")
     
     # iframe을 HTML로 삽입
     components.html(
         """
         <div style="text-align: center; 
-                    padding: 10px; 
-                    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
-                    border-radius: 10px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    padding: 15px; 
+                    background: linear-gradient(135deg, #e6f2ff 0%, #cce5ff 100%);
+                    border-radius: 15px;
+                    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+                    border: 1px solid #d4e9ff;">
             <iframe src="https://coupa.ng/ciwmbt" 
                     width="120" 
                     height="240" 
@@ -509,8 +512,11 @@ with st.sidebar:
             </iframe>
         </div>
         """,
-        height=280
+        height=300
     )
+    
+    # 쿠팡 파트너스 고지 (더 눈에 잘 띄게)
+    st.info("💡 이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.")
     
     st.markdown("---")
     
