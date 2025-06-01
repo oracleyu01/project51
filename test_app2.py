@@ -1497,7 +1497,7 @@ with col2:
     st.markdown('<div class="big-search">', unsafe_allow_html=True)
     career_name = st.text_input(
         "직업명 입력",
-        placeholder="예: 개발자, 의사, 교사, 디자이너, 변호사",
+        placeholder="예: 데이터 분석가, 데이터 엔지니어, DBA 등",
         value=default_value,
         label_visibility="collapsed",
         key="career_search_input"
