@@ -698,13 +698,6 @@ MBTI_CAREER_MAPPING = {
 }
 
 # ========================
-# 탭 생성
-# ========================
-tab1, tab2 = st.tabs(["🔍 직업 검색", "🧬 MBTI 직업 추천"])
-
-with tab1:
-
-# ========================
 # LangGraph State 정의
 # ========================
 
@@ -1658,8 +1651,9 @@ def create_career_workflow():
 career_app = create_career_workflow()
 
 # ========================
-# Streamlit UI
+# 탭 생성
 # ========================
+tab1, tab2 = st.tabs(["🔍 직업 검색", "🧬 MBTI 직업 추천"])
 
 with tab1:
     # 검색 섹션
@@ -1728,7 +1722,7 @@ with tab1:
                     st.rerun()
         
         st.markdown('</div></div>', unsafe_allow_html=True)
-
+    
     # 검색 실행
     if search_button:
         # 인기 검색어로 선택된 경우 해당 검색어 사용
